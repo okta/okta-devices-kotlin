@@ -12,9 +12,9 @@ This library is Okta's multi-factor push authentication service that provides a 
     - [Getting started](#getting-started)
     - [Installation](#Installation)
     - [Usage](#Usage)
-        - [Initialization](#Initialization)
+        - [Creation](#Creation)
         - [Enrollment](#Enrollment)
-            - [Retrieve enrollments](#Retrieve-enrollments)
+            - [Retrieve existing enrollments](#Retrieve-existing-enrollments)
             - [Update registration token](#Update-registration-token)
             - [Update user verification](#Update-user-verification)
             - [Delete enrollment](#Delete-enrollment)
@@ -49,6 +49,8 @@ or [IDX SDK](https://github.com/okta/okta-idx-android) is required. Firebase mes
 
 See the [Push Sample App] for a complete implementation.
 
+- **Kotlin Coroutines**: The following sample code assumes that suspend functions are called in a coroutine scope. See [Kotlin Coroutines] for more information.
+
 ### Installation
 
 Add the Okta Authenticator SDK dependency to your build.gradle file:
@@ -59,21 +61,26 @@ implementation("com.okta.devices:devices-push:0.0.1")
 
 ## Usage
 
-- **Kotlin Coroutines]**: The following sample code assumes that suspend functions are called in a coroutine scope. See [Kotlin Coroutines] for more information.
+A complete integration requires your app to implement the following:
 
-### Initialization
+- **Creation:** Create the SDK object to work with your Okta authenticator configuration.
+- **Enrollment:** Register a device and optional biometrics with an account for use with push MFA.
+- **Verification:** Resolve an MFA challenge step for a sign-in attempt against an enrolled account, prompting the user to approve or reject it (with optional biometrics).
+- **Update:** Refresh the FCM device registration token, remediate changed biometrics, deregister the account on the device.
+
+### Creation
 
 Create the SDK object to work with your Okta authenticator configuration. Use the PushAuthenticatorBuilder to create an authenticator with your application configuration:
 
 ```kotlin
 val authenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
     ApplicationConfig(context, appName = "MyApp", appVersion = BuildConfig.VERSION_NAME)
-)
+).getOrThrow()
 ```
 
 ### Enrollment
 
-Once an authenticator and oidc application has been created, you will also need a registration token from Firebase. After we have met all the requirements, we can start enrolling the user by doing the
+Once an authenticator and oidc application has been created, you will also need a Firebase device registration token. After we have met all the requirements, we can start enrolling the user by doing the
 following:
 
 ```kotlin
@@ -84,10 +91,10 @@ if (result.isSuccess) {
 }
 ```
 
-#### Retrieve enrollments
+#### Retrieve existing enrollments
 
 In order to retrieve information about existing enrollments, use `allEnrollments()`. This can be used to display attributes for a list of accounts or find a specific account in order to update or
-delete it. Retrieve all previously enrolled PushEnrollment:
+delete it.
 
 ```kotlin
 val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
@@ -125,7 +132,7 @@ enrollments.find { it.user.username == "myUser" }?.let { pushEnrollment ->
 
 ### Delete enrollment
 
-Deleting an enrollment from the server and the device:
+Deleting an enrollment will unenroll push verification. This will result in the SDK deleting enrollment from the device when a successful response is received from the Okta server.
 
 ```kotlin
 val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
@@ -140,7 +147,7 @@ enrollments.find { it.userInformation().username == "myUser" }?.let { pushEnroll
 
 ### Delete enrollment from device
 
-The difference between calling `deleteFromDevice` and `delete` is that `deleteFromDevice` does not make a server call, therefore it does not require any authorization. Use this with caution as the
+The difference between calling `deleteFromDevice` and `delete` is that `deleteFromDevice` does not make a server call to unenroll push verification, therefore it does not require any authorization. Use this with caution as the
 user will be unable to meet MFA requirements for any sign-in attempt.
 
 ```kotlin
@@ -195,6 +202,7 @@ private fun remediate(remediation: PushRemediation) = runCatching {
         is Completed -> println("Successfully handled. sign in success")
         is UserConsent -> println("Show a UX to accept or deny")
         is UserVerification -> println("Show a biometric prompt")
+        is UserVerificationError -> println("Biometric failure")
     }
 }.getOrElse { updateError(it) }
 ```
