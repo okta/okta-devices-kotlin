@@ -1,0 +1,28 @@
+name : push-sample-app-build
+
+on :
+  push :
+    paths :
+      - 'push-sample-app/**'
+      - 'devices-push/**'
+      - 'devices-authenticator/**'
+
+jobs :
+  build-test :
+    runs-on : ubuntu-latest
+
+    steps :
+      - name : Checkout
+        uses : actions/checkout@v2
+
+      - name : Validate Gradle Wrapper
+        uses : gradle/wrapper-validation-action@v1
+
+      - name : Configure JDK
+        uses : actions/setup-java@v2
+        with :
+          distribution : 'temurin'
+          java-version : '11'
+
+      - name : build
+        run : ./gradlew push-sample-app:assemble
