@@ -1,6 +1,7 @@
+[![Support](https://img.shields.io/badge/support-Developer%20Forum-blue.svg)][devforum]
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# Okta Authenticator SDK
+# Okta Devices SDK
 
 This library is Okta's multi-factor push authentication service that provides a way for you to implement MFA in your Android application.
 

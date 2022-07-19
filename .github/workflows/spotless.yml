@@ -1,6 +1,6 @@
 name : spotless
 
-on : push
+on : pull_request
 
 jobs :
   spotlessCheck :

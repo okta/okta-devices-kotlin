@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2021-2022, Okta, Inc. and/or its affiliates. All rights reserved.
+  The Okta software accompanied by this notice is provided pursuant to the Apache License,
+  Version 2.0 (the "License.")
+
+  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+  See the License for the specific language governing permissions and limitations under the
+  License.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">Magenta Bank</string>
+    <string name="back">Back</string>
+    <string name="welcome">Welcome</string>
+    <string name="enable_uv">Enable biometrics</string>
+    <string name="unknown_error">Unexpected Error</string>
+    <string name="accept_text">Yes, it\'s me</string>
+    <string name="deny_text">No, it\'s not me</string>
+
+    <string name="default_notification_channel_id">MagentaBankChannel</string>
+    <string name="push_notification_channel_name">Push notifications</string>
+    <string name="verify_sign_in_title">Verify your sign in</string>
+    <string name="verify_sign_in_body">Tap to verify your identify to %s</string>
+    <string name="push_notification_title">Are you signing in?\n%s\n%s</string>
+    <string name="dialog_sign_in_title">Are you signing in?</string>
+    <string name="verify_success_title">Continue at magentabank.com</string>
+    <string name="verify_success_summary">Thanks for securely verifying your identity.\n\nPlease continue on magentabank.com</string>
+    <string name="biometric_confirm">Confirm Biometric</string>
+    <string name="close">Close</string>
+    <string name="cancel">Cancel</string>
+    <string name="unknown">Unknown</string>
+    <string name="sign_in">Sign in</string>
+    <string name="sign_out">Sign out</string>
+    <string name="check_pending_notification">Check notification</string>
+    <string name="sign_in_faster">Sign in faster</string>
+    <string name="sign_in_faster_body">Sign in securely using push notifications from the Magenta Bank app.\nInstead of codes sent to your phone or email, verify that you’re signing in with a quick push notification.</string>
+    <string name="not_now">Not now</string>
+    <string name="set_up">Set up</string>
+    <string name="welcome_back">Welcome back, %s</string>
+    <string name="enable_push">Sign in with push notification</string>
+</resources>

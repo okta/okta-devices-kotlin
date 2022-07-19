@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "000000000",
+    "project_id": "replace-me",
+    "storage_bucket": "replace-me"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "replace-me",
+        "android_client_info": {
+          "package_name": "example.okta.android.push_sample_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "replace-me",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "replace-me"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "replace-me",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
