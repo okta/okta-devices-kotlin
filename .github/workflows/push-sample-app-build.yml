@@ -1,7 +1,7 @@
 name : push-sample-app-build
 
 on :
-  push :
+  pull_request :
     paths :
       - 'push-sample-app/**'
       - 'devices-push/**'
