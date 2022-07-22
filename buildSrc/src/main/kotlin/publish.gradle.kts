@@ -24,6 +24,31 @@ publishing {
                         name.set("Fei Chen")
                         email.set("fei.chen@okta.com")
                     }
+                    developer {
+                        id.set("tommywong-okta")
+                        name.set("Tommy Wong")
+                        email.set("tommy.wong@okta.com")
+                    }
+                    developer {
+                        id.set("buntyjoshi-okta")
+                        name.set("Bunty Joshi")
+                        email.set("bunty.joshi@okta.com")
+                    }
+                    developer {
+                        id.set("hansreichenbach-okta")
+                        name.set("Hans Reichenbach")
+                        email.set("hans.reichenbach@okta.com")
+                    }
+                    developer {
+                        id.set("IldarAbdullin-okta")
+                        name.set("Ildar Abdullin")
+                        email.set("ildar.abdullin@okta.com")
+                    }
+                    developer {
+                        id.set("mingxiajiang-okta")
+                        name.set("Mingxia Jiang")
+                        email.set("mingxia.jiang@okta.com")
+                    }
                 }
                 scm {
                     connection.set("scm:git@github.com:okta/okta-devices-kotlin.git")
