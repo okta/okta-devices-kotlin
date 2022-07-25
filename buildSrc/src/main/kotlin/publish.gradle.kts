@@ -60,10 +60,6 @@ publishing {
             groupId = "com.okta.devices"
             artifactId = project.name
             version = DevicesConfig.releaseVersion(project)
-            if (artifactId == "devices-core") {
-                artifact(tasks.getByName("emptySourceJar"))
-                artifact(tasks.getByName("emptyJavadocJar"))
-            }
             afterEvaluate {
                 from(components["release"])
             }
