@@ -1,13 +1,15 @@
-name : devices-push-test
+name : owasp-dependency-check
 
 on :
   pull_request :
     paths :
       - 'devices-push/**'
+      - 'push-sample-app/**'
 
 jobs :
-  build-test :
+  owaspDependencyCheck :
     runs-on : ubuntu-latest
+    timeout-minutes : 10
 
     steps :
       - name : Checkout
@@ -22,5 +24,5 @@ jobs :
           distribution : 'temurin'
           java-version : '11'
 
-      - name : test
-        run : ./gradlew devices-push:testReleaseUnitTest -i
+      - name : dependencyCheckAnalyze
+        run : ./gradlew dependencyCheckAnalyze

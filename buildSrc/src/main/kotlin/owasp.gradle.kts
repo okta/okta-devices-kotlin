@@ -11,7 +11,10 @@ dependencyCheck {
         "compile",
         "implementation",
         "releaseCompileClasspath",
-        "releaseRuntimeClasspath"
+        "releaseRuntimeClasspath",
+        "androidTest",
+        "runtimeOnly",
+        "testImplementation"
     )
     suppressionFile = File("${rootDir}/spotless/owasp-suppression.xml").toString()
 }
