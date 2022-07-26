@@ -4,6 +4,7 @@ plugins {
     id("spotless")
     id("publish")
     id("org.jetbrains.dokka")
+    id("org.jetbrains.kotlinx.kover")
     kotlin("android")
     kotlin("plugin.serialization") version Version.kotlin
 }
