@@ -7,7 +7,7 @@ This library is Okta's multi-factor push authentication service that provides a 
 
 **Table of Contents**
 
-- [Okta Authenticator SDK](#okta-authenticator-sdk)
+- [Okta Devices SDK](#okta-devices-sdk)
     - [Release status](#release-status)
     - [Need help?](#need-help)
     - [Getting started](#getting-started)
@@ -54,7 +54,7 @@ See the [Push Sample App] for a complete implementation.
 
 ### Installation
 
-Add the Okta Authenticator SDK dependency to your build.gradle file:
+Add the Okta Devices SDK dependency to your build.gradle file:
 
 ```kotlin
 implementation("com.okta.devices:devices-push:0.0.1")
@@ -90,9 +90,9 @@ following:
 
 ```kotlin
 val authConfig = DeviceAuthenticatorConfig(URL(orgUrl), "oidcClientId")
-val result = authenticator.enroll(AuthToken.Bearer("accessToken"), authConfig, EnrollmentParameters.Push(FcmToken("registrationToken")), enableUserVerification = false)
+val result = authenticator.enroll(AuthToken.Bearer("accessToken"), authConfig, EnrollmentParameters.Push(FcmToken("registrationToken"), enableUserVerification = false))
 if (result.isSuccess) {
-    val pushEnrollment: PushEnrollment = result.value
+    val pushEnrollment: PushEnrollment = result.getOrThrow()
 }
 ```
 
@@ -113,7 +113,7 @@ Whenever the FCM SDK sends your application a new token with FirebaseMessagingSe
 val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
 
 // Find the enrollment associated with the current user
-enrollments.find { it.user.username == "myUser" }?.let { pushEnrollment ->
+enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
     pushEnrollment.updateRegistrationToken(AuthToken.Bearer("accessToken"), FcmToken("newToken"))
         .onSuccess { println("success") }
         .onFailure { println("failure") }
@@ -128,7 +128,7 @@ User verification is for checking that a user is the one claimed, this can be ac
 val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
 
 // Find the enrollment associated with the current user
-enrollments.find { it.user.username == "myUser" }?.let { pushEnrollment ->
+enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
     pushEnrollment.setUserVerification(AuthToken.Bearer("accessToken"), true)
         .onSuccess { println("success") }
         .onFailure { println("failure") }
@@ -143,7 +143,7 @@ Deleting an enrollment will unenroll push verification. This will result in the 
 val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
 
 // Find the enrollment associated with the current user and delete it
-enrollments.find { it.userInformation().username == "myUser" }?.let { pushEnrollment ->
+enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
     authenticator.delete(AuthToken.Bearer("accessToken"), pushEnrollment)
         .onSuccess { println("success") }
         .onFailure { println("failure") }
@@ -159,7 +159,7 @@ user will be unable to meet MFA requirements for any sign-in attempt.
 val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
 
 // Find the enrollment associated with the current user
-enrollments.find { it.userInformation().username == "myUser" }?.let { pushEnrollment ->
+enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
     pushEnrollment.deleteFromDevice()
         .onSuccess { println("success") }
         .onFailure { println("failure") }
@@ -179,7 +179,7 @@ Sometimes Firebase messaging service fails to deliver a notification to the user
 val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
 
 // Find the enrollment associated with the current user
-enrollments.find { it.user.username == "myUser" }?.let { pushEnrollment ->
+enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
     pushEnrollment.retrievePushChallenges(AuthToken.Bearer("accessToken"))
         .onSuccess { println("success") }
         .onFailure { println("failure") }
@@ -209,7 +209,8 @@ private fun remediate(remediation: PushRemediation) = runCatching {
         is UserVerification -> println("Show a biometric prompt")
         is UserVerificationError -> println("Biometric failure")
     }
-}.getOrElse { updateError(it) }
+}.getOrElse { // handle error 
+}
 ```
 
 See the [Push Sample App] for a complete implementation on resolving a push challenge.
@@ -218,13 +219,15 @@ See the [Push Sample App] for a complete implementation on resolving a push chal
 
 We are happy to accept contributions and PRs! Please see the [contribution guide](CONTRIBUTING.md) to understand how to structure a contribution.
 
-[Push Sample App]: https://github.com/okta-tardis/okta-devices-android/tree/master/push-sample-app
+[Push Sample App]: https://github.com/okta/okta-devices-kotlin/tree/master/push-sample-app
 
 [devforum]: https://devforum.okta.com/
 
 [lang-landing]: https://developer.okta.com/code/android/#android-libraries
 
-[github-releases]: https://github.com/okta-tardis/okta-devices-android/releases
+[github-releases]: https://github.com/okta/okta-devices-kotlin/releases
+
+[github-issues]: https://github.com/okta/okta-devices-kotlin/issues
 
 [Rate Limiting at Okta]: https://developer.okta.com/docs/api/getting_started/rate-limits
 
