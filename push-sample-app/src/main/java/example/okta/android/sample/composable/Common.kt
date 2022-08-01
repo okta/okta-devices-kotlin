@@ -79,7 +79,7 @@ fun MagentaBankScaffold(
 
 @Composable
 @Preview
-fun ErrorState(errorSummary: String? = null, throwable: Throwable? = Exception(), doneAction: () -> Unit = {}) {
+fun ErrorState(errorSummary: String? = null, throwable: Throwable? = IllegalArgumentException("Preview only"), doneAction: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -144,8 +144,8 @@ fun CommonDialog(
     if (initialState) {
         AlertDialog(
             modifier = Modifier,
-            backgroundColor = Color(0xFFFFFBFE),
-            contentColor = contentColorFor(Color(0xFFFFFBFE)),
+            backgroundColor = Color(Constants.CONTENT_COLOR),
+            contentColor = contentColorFor(Color(Constants.CONTENT_COLOR)),
             shape = RoundedCornerShape(20.dp),
             onDismissRequest = { dismissAction() },
             title = title?.run {
@@ -176,7 +176,7 @@ fun CommonDialog(
                 ) {
                     secondaryText?.let {
                         ClickableText(
-                            style = TextStyle(color = Color(0xFF6750A4)),
+                            style = TextStyle(color = Color(Constants.TEXT_STYLE_COLOR)),
                             text = AnnotatedString(secondaryText),
                             onClick = {
                                 secondaryAction()
@@ -187,7 +187,7 @@ fun CommonDialog(
                     }
 
                     ClickableText(
-                        style = TextStyle(color = Color(0xFF6750A4)),
+                        style = TextStyle(color = Color(Constants.TEXT_STYLE_COLOR)),
                         text = AnnotatedString(primaryText),
                         onClick = {
                             primaryAction()

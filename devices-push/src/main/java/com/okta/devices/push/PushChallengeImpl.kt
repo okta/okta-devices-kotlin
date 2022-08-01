@@ -64,9 +64,12 @@ internal class PushChallengeImpl(private val ctx: ChallengeContext, private val 
             } else Success(UserConsent(this, ctx))
         deviceResult.toResult()
     }.getOrElse {
-        if (it is SignatureException || it is GeneralSecurityException || it is KeyStoreException || it is InvalidKeyException) {
-            val error = it.errorResponse()
-            Result.success(UserVerificationError(this, ctx, SecurityException(error.errorCode, error.errorSummary ?: "", error.exception)))
-        } else Result.failure(it)
+        when (it) {
+            is SignatureException, is GeneralSecurityException, is KeyStoreException, is InvalidKeyException -> {
+                val error = it.errorResponse()
+                Result.success(UserVerificationError(this, ctx, SecurityException(error.errorCode, error.errorSummary ?: "", error.exception)))
+            }
+            else -> Result.failure(it)
+        }
     }
 }

@@ -1,0 +1,37 @@
+# Configuration for compose https://detekt.dev/docs/introduction/compose/
+naming :
+  FunctionNaming :
+    active : true
+    excludes : [ '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
+    functionPattern : '[a-z][a-zA-Z0-9]*'
+    excludeClassPattern : '$^'
+    ignoreOverridden : true
+    ignoreAnnotated : [ 'Test', 'ParameterizedTest', 'Language', 'Composable' ]
+  TopLevelPropertyNaming :
+    active : true
+    constantPattern : '[A-Z][A-Za-z0-9]*'
+    propertyPattern : '[A-Za-z][_A-Za-z0-9]*'
+    privatePropertyPattern : '_?[A-Za-z][_A-Za-z0-9]*'
+style :
+  MagicNumber :
+    active : true
+    excludes : [ '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**', '**/*.kts' ]
+    ignoreNumbers :
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+    ignoreHashCodeFunction : true
+    ignorePropertyDeclaration : true
+    ignoreLocalVariableDeclaration : false
+    ignoreConstantDeclaration : true
+    ignoreCompanionObjectPropertyDeclaration : true
+    ignoreAnnotation : false
+    ignoreNamedArgument : true
+    ignoreEnums : false
+    ignoreRanges : false
+    ignoreExtensionFunctions : true
+  UnusedPrivateMember :
+    active : true
+    allowedNames : '(_|ignored|expected|serialVersionUID)'
+    ignoreAnnotated : [ 'Preview' ]

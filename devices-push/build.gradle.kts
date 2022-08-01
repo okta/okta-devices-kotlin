@@ -5,8 +5,15 @@ plugins {
     id("publish")
     id("org.jetbrains.dokka")
     id("org.jetbrains.kotlinx.kover")
+    id("io.gitlab.arturbosch.detekt")
     kotlin("android")
     kotlin("plugin.serialization") version Version.kotlin
+}
+
+detekt {
+    config = files("${project.rootDir}/config/devices-detekt.yml")
+    buildUponDefaultConfig = true
+    parallel = true
 }
 
 android {

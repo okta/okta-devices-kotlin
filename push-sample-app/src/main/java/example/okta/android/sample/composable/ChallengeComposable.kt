@@ -35,37 +35,44 @@ import example.okta.android.sample.model.UserResponse
 @Composable
 fun ChallengeComposable(finishAction: () -> Unit, viewModel: ChallengeViewModel) {
     val state by viewModel.uiState.collectAsState()
-    val activity = LocalContext.current as ChallengeActivity
 
     with(state) {
         when (this) {
             ProcessChallenge -> Unit // Initial state no need to show UI
             is Error -> ErrorState(stringResource(id = R.string.unknown), throwable, finishAction)
             is IncomingChallenge -> {
-                NotificationManagerCompat.from(activity).cancel(previousChallengeId)
-                when (remediationState) {
-                    is RemediationState.CompletedState -> ChallengeCompleted(finishAction)
-                    is RemediationState.UserConsentState -> {
-                        if (response == UserResponse.NONE) {
-                            AcceptPushScreen(
-                                remediationState.userConsent,
-                                { viewModel.acceptOrDeny(true, remediationState.userConsent) },
-                                { viewModel.acceptOrDeny(false, remediationState.userConsent) }
-                            )
-                        } else viewModel.acceptOrDeny(response == UserResponse.ACCEPTED, remediationState.userConsent)
-                    }
-                    is RemediationState.UserVerificationState -> LaunchedEffect(remediationState) {
-                        runCatching {
-                            val result = activity.handleBiometric(remediationState.userVerification.signature)
-                            viewModel.userVerification(remediationState.userVerification, result)
-                        }.onFailure {
-                            if (it is BiometricError.UserCancel || it is BiometricError.Error) viewModel.userVerification(remediationState.userVerification, null)
-                            else viewModel.onError(it)
-                        }
-                    }
-                    is RemediationState.UserVerificationErrorState -> viewModel.onError(remediationState.userVerificationError.securityError)
+                HandleIncomingChallenge(this, viewModel, finishAction)
+            }
+        }
+    }
+}
+
+@Composable
+fun HandleIncomingChallenge(incomingChallenge: IncomingChallenge, viewModel: ChallengeViewModel, finishAction: () -> Unit) {
+    with(incomingChallenge) {
+        val activity = LocalContext.current as ChallengeActivity
+        NotificationManagerCompat.from(activity).cancel(previousChallengeId)
+        when (remediationState) {
+            is RemediationState.CompletedState -> ChallengeCompleted(finishAction)
+            is RemediationState.UserConsentState -> {
+                if (response == UserResponse.NONE) {
+                    AcceptPushScreen(
+                        remediationState.userConsent,
+                        { viewModel.acceptOrDeny(true, remediationState.userConsent) },
+                        { viewModel.acceptOrDeny(false, remediationState.userConsent) }
+                    )
+                } else viewModel.acceptOrDeny(response == UserResponse.ACCEPTED, remediationState.userConsent)
+            }
+            is RemediationState.UserVerificationState -> LaunchedEffect(remediationState) {
+                runCatching {
+                    val result = activity.handleBiometric(remediationState.userVerification.signature)
+                    viewModel.userVerification(remediationState.userVerification, result)
+                }.onFailure {
+                    if (it is BiometricError.UserCancel || it is BiometricError.Error) viewModel.userVerification(remediationState.userVerification, null)
+                    else viewModel.onError(it)
                 }
             }
+            is RemediationState.UserVerificationErrorState -> viewModel.onError(remediationState.userVerificationError.securityError)
         }
     }
 }

@@ -165,7 +165,7 @@ class PushAuthenticatorTest : BaseTest() {
     fun `enroll with invalid token expect invalid token failure`() = runTest {
         // arrange
         testKeyStore.testSigner.generateAndStoreKeyPair("notServerKey", false)
-        val badKey = testKeyStore.testSigner.getPrivateKey("notServerKey") ?: throw IllegalStateException("Unable to generate test key")
+        val badKey = testKeyStore.testSigner.getPrivateKey("notServerKey") ?: error("Unable to generate test key")
         val authToken = AuthToken.Bearer(createAuthorizationJwt(badKey))
 
         // act

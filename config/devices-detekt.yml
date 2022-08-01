@@ -1,0 +1,35 @@
+# default detekt rules https://raw.githubusercontent.com/detekt/detekt/main/detekt-core/src/main/resources/default-detekt-config.yml
+build :
+  maxIssues : 0
+  excludeCorrectable : false
+  weights :
+  # complexity: 2
+  # LongParameterList: 1
+  # style: 1
+  # comments: 1
+
+complexity :
+  LargeClass :
+    active : true
+    threshold : 800
+    excludes : [ '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
+  LongMethod :
+    active : true
+    threshold : 60
+    excludes : [ '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
+  LongParameterList :
+    active : true
+    functionThreshold : 6
+    constructorThreshold : 7
+    ignoreDefaultParameters : true
+    ignoreDataClasses : true
+    ignoreAnnotatedParameter : [ ]
+style :
+  MaxLineLength :
+    active : true
+    maxLineLength : 200
+    excludePackageStatements : true
+    excludeImportStatements : true
+    excludeCommentStatements : false
+    ignoreAnnotated : [ 'Test', 'ParameterizedTest', 'Language' ]
+

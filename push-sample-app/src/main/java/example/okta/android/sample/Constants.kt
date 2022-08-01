@@ -24,4 +24,8 @@ object Constants {
     const val USER_RESPONSE = "user_response"
     const val TIME_OUT_MS = 10000L // 10s timeout for getting and responding to challenge
     const val DISMISS_DELAY_MS = 1000L // auto dismiss dialog delay
+
+    const val TEXT_STYLE_COLOR = 0xFF6750A4
+    const val CONTENT_COLOR = 0xFFFFFBFE
+    const val FILLER_COLOR = 0xFFEADDFF
 }
