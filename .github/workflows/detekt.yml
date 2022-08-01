@@ -3,7 +3,7 @@ name : detekt
 on : pull_request
 
 jobs :
-  without-type-resolution :
+  detekt-code-analysis :
     runs-on : ubuntu-latest
     timeout-minutes : 10
 

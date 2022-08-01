@@ -65,13 +65,13 @@ dependencies {
     implementation("androidx.biometric:biometric:1.2.0-alpha04")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Version.kotlin}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Version.coroutine}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:${Version.coroutine}")
     implementation("androidx.core:core-ktx:1.8.0")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-orgjson:0.11.5") {
         exclude(group = "org.json", module = "json") // provided by Android natively
     }
+    implementation("com.google.android.gms:play-services-basement:18.1.0")
 
     testImplementation("com.okta.devices:devices-fake-server:${Version.devicesFakeServer}")
     testImplementation("androidx.arch.core:core-testing:2.1.0")

@@ -90,6 +90,6 @@ dependencies {
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:30.0.0"))
+    implementation(platform("com.google.firebase:firebase-bom:30.3.1"))
     implementation("com.google.firebase:firebase-messaging-ktx")
 }
