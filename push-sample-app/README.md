@@ -7,8 +7,8 @@ This example shows you how to use the [Okta Devices SDK](https://github.com/okta
   - [Prerequisites](#prerequisites)
   - [Configuration](#configuration)
   - [Dependencies](#dependencies)
-  - [Run this example](#running-this-example)
-  - [Enroll this app as a custom authenticator](#enrolling-this-app-as-a-custom-authenticator)
+  - [Run this example](#run-this-example)
+  - [Enroll this app as a custom authenticator](#enroll-this-app-as-a-custom-authenticator)
   - [Verify it works](#verify-it-works)
 
 ## Prerequisites
