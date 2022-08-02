@@ -11,14 +11,14 @@ spotless {
     }
     cpp {
         target("**/*.CPP")
-        licenseHeaderFile("${rootDir}/spotless/license", "#")
+        licenseHeaderFile("${rootDir}/config/license", "#")
         eclipseCdt() // Use default CDT formatter
         endWithNewline()
     }
     kotlin {
         target("**/*.kt")
         ktlint("0.46.1")
-        licenseHeaderFile("${rootDir}/spotless/license")
+        licenseHeaderFile("${rootDir}/config/license")
         endWithNewline()
     }
     kotlinGradle {
@@ -30,6 +30,6 @@ spotless {
     format("xml") {
         target("**/*.xml")
         targetExclude("**/build/**/*.xml")
-        licenseHeaderFile("${rootDir}/spotless/license.xml", "(<[^!?])")
+        licenseHeaderFile("${rootDir}/config/license.xml", "(<[^!?])")
     }
 }

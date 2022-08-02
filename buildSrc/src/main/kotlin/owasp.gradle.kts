@@ -16,5 +16,5 @@ dependencyCheck {
         "runtimeOnly",
         "testImplementation"
     )
-    suppressionFile = File("${rootDir}/spotless/owasp-suppression.xml").toString()
+    suppressionFile = File("${rootDir}/config/owasp-suppression.xml").toString()
 }

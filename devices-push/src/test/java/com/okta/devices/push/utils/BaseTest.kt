@@ -14,7 +14,6 @@
  */
 package com.okta.devices.push.utils
 
-import android.os.Build
 import androidx.annotation.CallSuper
 import com.okta.devices.fake.util.isRobolectric
 import io.mockk.MockKAnnotations
@@ -23,16 +22,11 @@ import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
 import org.junit.BeforeClass
-import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
 import java.security.Provider
 import java.security.Security
 
-@Config(
-    qualifiers = "w1440dp-h3040dp-xhdpi",
-    sdk = [Build.VERSION_CODES.S]
-)
-abstract class BaseTest {
+open class BaseTest {
     init {
         if (isRobolectric()) ShadowLog.stream = System.out
     }

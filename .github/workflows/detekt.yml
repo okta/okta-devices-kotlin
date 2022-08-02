@@ -1,0 +1,26 @@
+name : detekt
+
+on : pull_request
+
+jobs :
+  detekt-code-analysis :
+    runs-on : ubuntu-latest
+    timeout-minutes : 10
+
+    env :
+      GRADLE_OPTS : -Dorg.gradle.daemon=false
+
+    steps :
+      - name : Checkout
+        uses : actions/checkout@v2
+
+      - name : Validate Gradle Wrapper
+        uses : gradle/wrapper-validation-action@v1
+
+      - name : Configure JDK
+        uses : actions/setup-java@v1
+        with :
+          java-version : '11.0.4'
+
+      - name : detekt
+        run : ./gradlew detekt

@@ -7,7 +7,7 @@ object Version {
     const val coroutine = "1.6.4"
     const val room = "2.4.2"
     const val extJunit = "1.1.3"
-    const val archLifecycleVersion = "2.5.0"
+    const val archLifecycleVersion = "2.5.1"
     const val compose = "1.3.0-alpha01"
     const val composeCompiler = "1.2.0"
     const val devicesAuthenticator = "0.0.1-SNAPSHOT"

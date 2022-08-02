@@ -5,7 +5,14 @@ plugins {
     id("owasp")
     id("spotless")
     id("com.google.gms.google-services")
+    id("io.gitlab.arturbosch.detekt")
     kotlin("android")
+}
+
+detekt {
+    config = files("${project.rootDir}/config/devices-detekt.yml", "${project.rootDir}/config/compose-detekt.yml")
+    buildUponDefaultConfig = true
+    parallel = true
 }
 
 android {
@@ -71,7 +78,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.4.2")
     implementation("androidx.biometric:biometric:1.2.0-alpha04")
     implementation("androidx.activity:activity-compose:1.5.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.5.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:${Version.archLifecycleVersion}")
     implementation("androidx.compose.material:material:${Version.compose}")
     implementation("androidx.compose.ui:ui:${Version.compose}")
     implementation("androidx.compose.ui:ui-tooling:${Version.compose}")
@@ -83,6 +90,6 @@ dependencies {
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:30.0.0"))
+    implementation(platform("com.google.firebase:firebase-bom:30.3.1"))
     implementation("com.google.firebase:firebase-messaging-ktx")
 }

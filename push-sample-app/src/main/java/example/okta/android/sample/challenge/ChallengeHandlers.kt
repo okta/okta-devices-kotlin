@@ -21,13 +21,6 @@ import com.okta.devices.push.PushRemediation.UserVerification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-sealed interface RemediationState {
-    class CompletedState(val completed: PushRemediation.Completed) : RemediationState
-    class UserConsentState(val userConsent: UserConsent) : RemediationState
-    class UserVerificationState(val userVerification: UserVerification) : RemediationState
-    class UserVerificationErrorState(val userVerificationError: PushRemediation.UserVerificationError) : RemediationState
-}
-
 /**
  * Wrap the PushRemediation as a ViewModel state. The state can then be passed to the UI layer
  *

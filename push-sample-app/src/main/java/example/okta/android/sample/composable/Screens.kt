@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.okta.devices.push.PushRemediation
+import example.okta.android.sample.Constants
 import example.okta.android.sample.R
 import example.okta.android.sample.model.UserStatus
 import example.okta.android.sample.model.UserStatusPreview
@@ -181,7 +182,7 @@ fun HomeScreen(
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val canvasSize = size
                 drawRect(
-                    color = Color(0xFFEADDFF),
+                    color = Color(Constants.FILLER_COLOR),
                     topLeft = Offset(x = 0f, y = 0f),
                     size = canvasSize
                 )
