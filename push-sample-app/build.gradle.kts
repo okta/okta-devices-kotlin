@@ -92,4 +92,5 @@ dependencies {
     // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:30.3.1"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha03")
 }
