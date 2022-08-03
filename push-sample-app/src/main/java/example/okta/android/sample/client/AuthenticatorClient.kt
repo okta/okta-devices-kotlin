@@ -47,9 +47,17 @@ import java.net.URL
 class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClient) {
     private val masterKey: MasterKey = MasterKey.Builder(app).setKeyGenParameterSpec(AES256_GCM_SPEC).build()
 
-    private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(app, "passphrase", masterKey, EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV, EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
+    private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
+        app,
+        "passphrase",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
 
     private val passphraseKey: String = "passphrase"
+
+    private val passphraseLength: Int = 64
 
     // Create the PushAuthenticator and customize the DeviceLog to use timber
     private val pushAuthenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
@@ -115,7 +123,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
     private fun generatePassphrase(): String {
         val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
         val sb = StringBuilder()
-        for (i in 1..64) {
+        repeat(passphraseLength) {
             sb.append(allowedChars.random())
         }
         sharedPreferences.edit().putString(passphraseKey, sb.toString()).commit()
