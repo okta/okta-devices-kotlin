@@ -23,6 +23,11 @@ This library is Okta's multi-factor push authentication service that provides a 
         - [Verification](#Verification)
             - [Retrieve pending challenges](#Retrieve-pending-challenges)
             - [Resolve the challenge](#Resolve-the-challenge)
+            - [Remediation steps](#remediation-steps)
+                - [UserConsent](#UserConsent)
+                - [UserVerification](#UserVerification)
+                - [UserVerificationError](#UserVerificationError)
+                - [Completed](#Completed)
 
 ## Release status
 
@@ -77,16 +82,17 @@ Create the SDK object to work with your Okta authenticator configuration. Use th
 val authenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
     ApplicationConfig(context, appName = "MyApp", appVersion = BuildConfig.VERSION_NAME)
 ) {
-    passphrase = encryptedSharedPreference.getString(passphraseKey,null)?.toByteArray() // Secret must be stored securely 
+    passphrase = encryptedSharedPreference.getString(passphraseKey, null)?.toByteArray() // Secret must be stored securely 
 }.getOrThrow()
 ```
 
-If a passphrase isn't provided, then the Devices SDK data will not be encrypted. It is up to you to secure the passphrase. Please store your passphrase in a secure way, in the above example and sample app we use Android's [EncryptedSharedPreferences](https://developer.android.com/topic/security/data#kotlin) class
+If a passphrase isn't provided, then the Devices SDK data will not be encrypted. It is up to you to secure the passphrase. Please store your passphrase in a secure way, in the above example and sample
+app we use Android's [EncryptedSharedPreferences](https://developer.android.com/topic/security/data#kotlin) class
 
 ### Enrollment
 
-Once an authenticator and oidc application has been created, you will also need a Firebase device registration token. After we have met all the requirements, we can start enrolling the user by doing the
-following:
+Once an authenticator and oidc application has been created, you will also need a Firebase device registration token. After we have met all the requirements, we can start enrolling the user by doing
+the following:
 
 ```kotlin
 val authConfig = DeviceAuthenticatorConfig(URL(orgUrl), "oidcClientId")
@@ -152,8 +158,8 @@ enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
 
 ### Delete enrollment from device
 
-The difference between calling `deleteFromDevice` and `delete` is that `deleteFromDevice` does not make a server call to unenroll push verification, therefore it does not require any authorization. Use this with caution as the
-user will be unable to meet MFA requirements for any sign-in attempt.
+The difference between calling `deleteFromDevice` and `delete` is that `deleteFromDevice` does not make a server call to unenroll push verification, therefore it does not require any authorization.
+Use this with caution as the user will be unable to meet MFA requirements for any sign-in attempt.
 
 ```kotlin
 val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
@@ -188,32 +194,144 @@ enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
 
 ### Resolve the challenge
 
-Once you have received a challenge via one of the channels above, your app should `resolve` them in order to proceed with login. The SDK may request remediation steps in order to complete resolution,
-such as `UserConsent` (to request the user to approve/deny the challenge) or `UserVerification` to notify the app that a biometric verification is required to proceed.
+Once you have received a challenge via one of the channels above, your app should `resolve` them in order to proceed with login. The SDK may request remediation steps to resolve the challenge.
+Remediation steps are subclasses of the sealed class `PushRemediation`, which allows us to use the `when` statement to handle the remediation steps:
 
 ```kotlin
 
 val fcmRemoteMessage = "PushChallengeString" // fcm challenge
+val scope = CoroutineScope(Job() + Dispatchers.IO)
 
 authenticator.parseChallenge(fcmRemoteMessage)
     .onSuccess { challenge ->
         challenge.resolve().onSuccess { remediation ->
-            remediate(remediation) // call method to handle remediation
+            scope.launch {
+                remediate(remediation) // call method to handle remediation
+            }
         }.onFailure { println("failure") }
     }.onFailure { println("failure") }
 
-private fun remediate(remediation: PushRemediation) = runCatching {
+private suspend fun remediate(remediation: PushRemediation) = runCatching {
     when (remediation) {
-        is Completed -> println("Successfully handled. sign in success")
-        is UserConsent -> println("Show a UX to accept or deny")
-        is UserVerification -> println("Show a biometric prompt")
-        is UserVerificationError -> println("Biometric failure")
+        is UserConsent -> handleUserConsent(remediation) // See section on UserConsent
+        is UserVerification -> handleUserVerification(remediation) // See section on UserVerification
+        is UserVerificationError -> handleUserVerificationError(remediation) // See section on UserVerificationError
+        is Completed -> handleCompleted(remediation) // See section on Completed
     }
-}.getOrElse { // handle error 
+}.getOrElse { onError(it) }
+
+private fun onError(throwable: Throwable) {
+    // handle error
 }
 ```
 
-See the [Push Sample App] for a complete implementation on resolving a push challenge.
+### Remediation steps
+
+```mermaid
+graph TD
+    PushRemediation --> UserConsent
+    PushRemediation --> UserVerification
+    PushRemediation --> UserVerificationError
+    PushRemediation --> Completed
+    UserConsent --> |user approve or deny?|UserConsentAction{approve/deny}
+    UserConsentAction --> |User approved| Completed
+    UserConsentAction --> |User denied| Completed
+    UserVerification --> |resolved biometric or cancel?|UserVerificationAction{resolve/cancel}
+    UserVerificationAction --> |resolve| Resolve
+    UserVerificationAction --> |cancel| UserConsent
+    Resolve --> Completed
+    Resolve --> UserVerificationError
+    UserVerificationError --> ResolveError[Resolve]
+    ResolveError --> |Corrected error|UserVerification
+    ResolveError --> |Unable to correct. Ask user consent instead?|ConsentOnFailure{true/false}
+    ConsentOnFailure --> |true|UserConsent
+    ConsentOnFailure --> |false|Completed
+```
+
+For remediation steps that requires user confirmation, it is important to display the information from the `PushChallenge` property in `PushRemediation`. All of the challenge steps can call `deny()`
+to reject the challenge, except the completed step.
+
+#### UserConsent
+
+Display the challenge information and request the user either accept or deny:
+
+```kotlin
+private suspend fun handleUserConsent(userConsent: UserConsent) = runCatching {
+    // Show the following information in a UX dialog and ask the user to accept or deny.
+    // application name: ${userConsent?.challenge?.appInstanceName}")
+    // location of sign in attempt: {userConsent?.challenge?.clientLocation}")
+    // OS used to sign in: ${userConsent?.challenge?.clientOs}")
+    // URL that initiated the sign in: ${userConsent?.challenge?.originUrl}
+    // Time of sign in attempt: ${userConsent?.challenge?.transactionTime}
+
+    // Call either userConsent.accept() or     userConsent.deny() depending on user interaction
+
+    // if user accept the challenge
+    userConsent.accept()
+        .onSuccess { remediate(it) }
+        .onFailure { onError(it) }
+    // if user denied the challenge
+    userConsent.deny()
+        .onSuccess { remediate(it) }
+        .onFailure { onError(it) }
+}.getOrElse { onError(it) }
+```
+
+Based on the diagram from [Remediation steps](#Remediation steps), the next possible step is [Completed](#Completed). See [PushMessagingService] for a complete example.
+
+#### UserVerification
+
+Display the challenge information and notify user that a biometric verification is required to proceed:
+
+```kotlin
+private suspend fun handleUserVerification(userVerification: UserVerification) = runCatching {
+    // Similar to UserConsent. show all the challenge information from userVerification.challenge
+    // You can either cancel the UserVerification or resolve with a authenticationResult from BiometricPrompt library
+
+    // If user provided biometric verification
+    userVerification.resolve(authenticationResult)
+        .onSuccess { remediate(it) }
+        .onFailure { onError(it) }
+    // if user cancel the biometric prompt
+    userVerification.cancel()
+        .onSuccess { remediate(it) }
+        .onFailure { onError(it) }
+}.getOrElse { onError(it) }
+```
+
+From the diagram [Remediation steps](#Remediation steps), the next possible steps are [UserConsent](#UserConsent), [UserVerificationError](#UserVerificationError) and [Completed](#Completed)
+
+#### UserVerificationError
+
+UserVerificationError can happen if the biometric key is invalid. This can happen if the user removes the pin or add a new fingerprint:
+
+```kotlin
+private suspend fun handleUserVerificationError(userVerificationError: UserVerificationError) = runCatching {
+    // inspect userVerificationError.securityError property to determine the correct action.
+    // If the error is UserVerificationFailed, this is caused by the user failing the biometric challenge.
+    // If the error is UserVerificationRequired, this is caused by missing biometric key. To fix this, you can ask
+    // the user to enroll with user verification. Once you are confident the user has corrected, try again by calling resolve
+
+    userVerificationError.resolve()
+        .onSuccess { remediate(it) }
+        .onFailure { onError(it) }
+}.getOrElse { onError(it) }
+```
+
+From the diagram in [Remediation steps](#Remediation steps), the next possible steps are [UserConsent](#UserConsent), [UserVerification](#UserVerification) and [Completed](#Completed)
+
+#### Completed
+
+The completed step is information that transaction was completed successfully, this does not represent that the user has successfully signed in.
+
+```kotlin
+private suspend fun handleCompleted(competed: Completed) {
+    // print the completed state. 
+    println("If user verification was used ${competed.state.userVerificationUsed}")
+    println("Did user accept this challenge ${competed.state.accepted}")
+    println("Exceptions encountered. ${competed.state.throwable}")
+}
+```
 
 ## Contributing
 
@@ -234,3 +352,5 @@ We are happy to accept contributions and PRs! Please see the [contribution guide
 [okta-library-versioning]: https://developer.okta.com/code/library-versions
 
 [Kotlin coroutines]: https://kotlinlang.org/docs/coroutines-overview.html
+
+[PushMessagingService]: https://github.com/okta/okta-devices-kotlin/blob/master/push-sample-app/src/main/java/example/okta/android/sample/service/PushMessagingService.kt
