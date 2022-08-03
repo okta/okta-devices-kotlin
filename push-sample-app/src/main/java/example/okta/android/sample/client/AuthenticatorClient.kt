@@ -15,6 +15,10 @@
 package example.okta.android.sample.client
 
 import android.app.Application
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import androidx.security.crypto.MasterKeys.AES256_GCM_SPEC
 import com.okta.devices.api.log.DeviceLog
 import com.okta.devices.api.model.ApplicationConfig
 import com.okta.devices.api.model.DeviceAuthenticatorConfig
@@ -27,6 +31,7 @@ import com.okta.devices.push.api.PushEnrollment
 import example.okta.android.sample.BuildConfig
 import example.okta.android.sample.errors.AuthenticatorError
 import timber.log.Timber
+import java.lang.StringBuilder
 import java.net.URL
 
 /**
@@ -40,6 +45,12 @@ import java.net.URL
  * @param app
  */
 class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClient) {
+    private val masterKey: MasterKey = MasterKey.Builder(app).setKeyGenParameterSpec(AES256_GCM_SPEC).build()
+
+    private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(app, "passphrase", masterKey, EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV, EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
+
+    private val passphraseKey: String = "passphrase"
+
     // Create the PushAuthenticator and customize the DeviceLog to use timber
     private val pushAuthenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
         ApplicationConfig(app, appName = BuildConfig.APPLICATION_ID, appVersion = BuildConfig.VERSION_NAME)
@@ -51,7 +62,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
             }
         }
         // Enable encryption
-        passphrase = "Do not do this in your app".toByteArray()
+        passphrase = getPassphrase().toByteArray()
     }.getOrThrow()
 
     suspend fun getEnrollment(userId: String): Result<PushEnrollment> = runCatching {
@@ -100,4 +111,17 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
             Result.success(challenges)
         } ?: Result.failure(AuthenticatorError.NoEnrollment)
     }.getOrElse { Result.failure(it) }
+
+    private fun generatePassphrase(): String {
+        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+        val sb = StringBuilder()
+        for (i in 1..64) {
+            sb.append(allowedChars.random())
+        }
+        sharedPreferences.edit().putString(passphraseKey, sb.toString()).commit()
+        return sb.toString()
+    }
+    private fun getPassphrase(): String {
+        return sharedPreferences.getString(passphraseKey, null) ?: generatePassphrase()
+    }
 }

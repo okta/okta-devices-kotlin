@@ -77,11 +77,11 @@ Create the SDK object to work with your Okta authenticator configuration. Use th
 val authenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
     ApplicationConfig(context, appName = "MyApp", appVersion = BuildConfig.VERSION_NAME)
 ) {
-    passphrase = "SecretPassphrase".toByteArray() // Secret must be stored securely 
+    passphrase = encryptedSharedPreference.getString(passphraseKey,null)?.toByteArray() // Secret must be stored securely 
 }.getOrThrow()
 ```
 
-If a passphrase isn't provided, then the Devices SDK data will not be encrypted. It is up to you to secure the passphrase.
+If a passphrase isn't provided, then the Devices SDK data will not be encrypted. It is up to you to secure the passphrase. Please store your passphrase in a secure way, in the above example and sample app we use Android's [EncryptedSharedPreferences](https://developer.android.com/topic/security/data#kotlin) class
 
 ### Enrollment
 
