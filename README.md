@@ -299,7 +299,7 @@ private suspend fun handleUserVerification(userVerification: UserVerification) =
 }.getOrElse { onError(it) }
 ```
 
-From the diagram [Remediation steps](#Remediation steps), the next possible steps are [UserConsent](#UserConsent), [UserVerificationError](#UserVerificationError) and [Completed](#Completed)
+From the diagram [Remediation steps](#Remediation-steps), the next possible steps are [UserConsent](#UserConsent), [UserVerificationError](#UserVerificationError) and [Completed](#Completed)
 
 #### UserVerificationError
 
@@ -318,7 +318,7 @@ private suspend fun handleUserVerificationError(userVerificationError: UserVerif
 }.getOrElse { onError(it) }
 ```
 
-From the diagram in [Remediation steps](#Remediation steps), the next possible steps are [UserConsent](#UserConsent), [UserVerification](#UserVerification) and [Completed](#Completed)
+From the diagram in [Remediation steps](#Remediation-steps), the next possible steps are [UserConsent](#UserConsent), [UserVerification](#UserVerification) and [Completed](#Completed)
 
 #### Completed
 
