@@ -14,20 +14,18 @@
  */
 package com.okta.devices.push
 
+import com.okta.devices.api.errors.DeviceAuthenticatorError
 import com.okta.devices.api.errors.DeviceAuthenticatorError.SecurityError.SecurityException
 import com.okta.devices.api.errors.DeviceAuthenticatorError.SecurityError.UserVerificationRequired
-import com.okta.devices.authenticator.exceptions.toResult
 import com.okta.devices.authenticator.model.ChallengeContext
 import com.okta.devices.model.ErrorCode
-import com.okta.devices.model.ErrorResponse
-import com.okta.devices.model.errorResponse
+import com.okta.devices.model.ErrorCode.USER_VERIFICATION_FAILED
 import com.okta.devices.push.PushRemediation.UserConsent
 import com.okta.devices.push.PushRemediation.UserVerification
 import com.okta.devices.push.PushRemediation.UserVerificationError
 import com.okta.devices.push.api.PushChallenge
-import com.okta.devices.request.DeviceResult
-import com.okta.devices.request.DeviceResult.Success
-import com.okta.devices.util.UserVerificationChallenge
+import com.okta.devices.util.UserVerificationChallenge.PREFERRED
+import com.okta.devices.util.UserVerificationChallenge.REQUIRED
 import io.jsonwebtoken.security.SignatureException
 import java.security.GeneralSecurityException
 import java.security.InvalidKeyException
@@ -54,21 +52,18 @@ internal class PushChallengeImpl(private val ctx: ChallengeContext, private val 
 
     override fun resolve(): Result<PushRemediation> = runCatching {
         val userVerification = info.userVerificationChallenge
+        if (!validTime) return Result.failure(DeviceAuthenticatorError.SecurityError.InvalidToken(ErrorCode.INVALID_OR_EXPIRED_TOKEN.value, "Expired token, check device clock"))
 
-        val deviceResult =
-            if (!validTime) DeviceResult.Error(ErrorResponse(ErrorCode.INVALID_OR_EXPIRED_TOKEN.value, "Expired token, check device clock"))
-            else if (userVerification == UserVerificationChallenge.REQUIRED && !ctx.uvEnabled) {
-                Success(UserVerificationError(this, ctx, UserVerificationRequired(ErrorCode.USER_VERIFICATION_FAILED.value, "")))
-            } else if ((userVerification == UserVerificationChallenge.PREFERRED && ctx.uvEnabled) || userVerification == UserVerificationChallenge.REQUIRED) {
-                Success(UserVerification(this, ctx, ctx.baseEnrollment.userVerificationSignature()))
-            } else Success(UserConsent(this, ctx))
-        deviceResult.toResult()
+        val remediation = when {
+            userVerification == REQUIRED && !ctx.uvEnabled -> UserVerificationError(this, ctx, UserVerificationRequired(USER_VERIFICATION_FAILED.value, ""))
+            (userVerification == PREFERRED && ctx.uvEnabled) || userVerification == REQUIRED -> UserVerification(this, ctx, ctx.baseEnrollment.userVerificationSignature())
+            else -> UserConsent(this, ctx)
+        }
+        Result.success(remediation)
     }.getOrElse {
         when (it) {
-            is SignatureException, is GeneralSecurityException, is KeyStoreException, is InvalidKeyException -> {
-                val error = it.errorResponse()
-                Result.success(UserVerificationError(this, ctx, SecurityException(error.errorCode, error.errorSummary ?: "", error.exception)))
-            }
+            is SignatureException, is GeneralSecurityException, is KeyStoreException, is InvalidKeyException ->
+                Result.success(UserVerificationError(this, ctx, SecurityException(USER_VERIFICATION_FAILED.value, "User verification failure", it)))
             else -> Result.failure(it)
         }
     }

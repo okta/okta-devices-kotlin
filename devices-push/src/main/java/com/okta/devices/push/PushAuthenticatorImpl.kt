@@ -32,6 +32,7 @@ import com.okta.devices.model.deviceError
 import com.okta.devices.push.api.PushAuthenticator
 import com.okta.devices.push.api.PushChallenge
 import com.okta.devices.push.api.PushEnrollment
+import com.okta.devices.util.baseUrl
 
 internal class PushAuthenticatorImpl(
     appConfig: ApplicationConfig,
@@ -65,7 +66,6 @@ internal class PushAuthenticatorImpl(
     }.getOrElse { it.deviceError().toResult() }
 
     override suspend fun enroll(authToken: AuthToken, config: DeviceAuthenticatorConfig, params: EnrollmentParameters): Result<PushEnrollment> {
-        val (url, oidcClientId) = config
         if (params !is EnrollmentParameters.Push) return Result.failure(IllegalArgumentException("EnrollmentParameters must be of type Push"))
         val coreParameters = EnrollmentCoreParameters(
             methodTypes = listOf(PUSH),
@@ -73,7 +73,7 @@ internal class PushAuthenticatorImpl(
             pushToken = params.registrationToken.get(),
             userVerificationEnabled = params.enableUserVerification
         )
-        return core.enroll(url.toString(), oidcClientId, coreParameters, null).fold(
+        return core.enroll(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
             { Result.success(PushEnrollmentImpl(it)) },
             { Result.failure(it) }
         )
