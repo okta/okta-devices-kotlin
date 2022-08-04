@@ -325,7 +325,7 @@ From the diagram in [Remediation steps](#Remediation-steps), the next possible s
 The completed step is information that transaction was completed successfully, this does not represent that the user has successfully signed in.
 
 ```kotlin
-private suspend fun handleCompleted(competed: Completed) {
+private suspend fun handleCompleted(completed: Completed) {
     // print the completed state. 
     println("If user verification was used ${competed.state.userVerificationUsed}")
     println("Did user accept this challenge ${competed.state.accepted}")
