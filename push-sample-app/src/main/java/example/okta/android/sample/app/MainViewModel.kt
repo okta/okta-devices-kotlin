@@ -29,6 +29,7 @@ import example.okta.android.sample.challenge.remediationAsState
 import example.okta.android.sample.client.AuthenticatorClient
 import example.okta.android.sample.client.OktaOidcClient
 import example.okta.android.sample.model.UserStatus
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,7 +41,8 @@ import timber.log.Timber
 
 class MainViewModel(
     private val authenticatorClient: AuthenticatorClient,
-    private val oidcClient: OktaOidcClient
+    private val oidcClient: OktaOidcClient,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     class Factory(private val authenticatorClient: AuthenticatorClient, private val oidcClient: OktaOidcClient) : ViewModelProvider.Factory {
@@ -69,7 +71,7 @@ class MainViewModel(
 
     fun refresh(checkPending: Boolean) {
         uiStateFlow.update { State.Loading }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(dispatcher) {
             oidcClient.getSignedInUser().onSuccess { userStatus ->
                 authenticatorClient.getEnrollment(userStatus.userId)
                     .onSuccess { enrollment ->
@@ -91,14 +93,14 @@ class MainViewModel(
         }
     }
 
-    fun signIn(activity: MainActivity) = viewModelScope.launch(Dispatchers.IO) {
+    fun signIn(activity: MainActivity) = viewModelScope.launch(dispatcher) {
         uiStateFlow.update { State.Loading }
         oidcClient.oidcAuthenticate(activity)
             .onSuccess { userStatus -> uiStateFlow.update { State.SetupPush(userStatus) } }
             .onFailure { onError(it) }
     }
 
-    fun enablePush(userStatus: UserStatus, enableUv: Boolean) = viewModelScope.launch(Dispatchers.IO) {
+    fun enablePush(userStatus: UserStatus, enableUv: Boolean) = viewModelScope.launch(dispatcher) {
         uiStateFlow.update { State.Loading }
         runCatching {
             val token = FirebaseMessaging.getInstance().token.asDeferred().await()
@@ -108,7 +110,7 @@ class MainViewModel(
         }.getOrElse { onError(it) }
     }
 
-    fun disablePush(userStatus: UserStatus) = viewModelScope.launch(Dispatchers.IO) {
+    fun disablePush(userStatus: UserStatus) = viewModelScope.launch(dispatcher) {
         uiStateFlow.update { State.Loading }
         runCatching {
             authenticatorClient.delete(userStatus.userId)
@@ -117,7 +119,7 @@ class MainViewModel(
         }
     }
 
-    fun updateUserVerification(userStatus: UserStatus, enableUv: Boolean) = viewModelScope.launch(Dispatchers.IO) {
+    fun updateUserVerification(userStatus: UserStatus, enableUv: Boolean) = viewModelScope.launch(dispatcher) {
         uiStateFlow.update { State.Loading }
         runCatching {
             authenticatorClient.updateUserVerification(enableUv, userStatus.userId)
@@ -126,19 +128,19 @@ class MainViewModel(
         }.getOrElse { onError(it) }
     }
 
-    fun acceptOrDeny(accept: Boolean, userConsent: PushRemediation.UserConsent) = viewModelScope.launch(Dispatchers.IO) {
+    fun acceptOrDeny(accept: Boolean, userConsent: PushRemediation.UserConsent) = viewModelScope.launch(dispatcher) {
         userConsent.handleAcceptOrDeny(accept)
             .onSuccess { remediationState -> uiStateFlow.update { State.RemediationStatus(remediationState) } }
             .onFailure { onError(it) }
     }
 
-    fun userVerification(userVerification: PushRemediation.UserVerification, result: BiometricPrompt.AuthenticationResult?) = viewModelScope.launch(Dispatchers.IO) {
+    fun userVerification(userVerification: PushRemediation.UserVerification, result: BiometricPrompt.AuthenticationResult?) = viewModelScope.launch(dispatcher) {
         userVerification.handleUserVerification(result)
             .onSuccess { remediationState -> uiStateFlow.update { State.RemediationStatus(remediationState) } }
             .onFailure { onError(it) }
     }
 
-    fun signOut(userId: String) = viewModelScope.launch(Dispatchers.IO) {
+    fun signOut(userId: String) = viewModelScope.launch(dispatcher) {
         authenticatorClient.delete(userId).onSuccess {
             oidcClient.revokeToken(userId)
                 .onSuccess {

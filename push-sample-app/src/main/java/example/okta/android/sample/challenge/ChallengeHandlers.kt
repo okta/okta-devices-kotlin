@@ -18,6 +18,7 @@ import androidx.biometric.BiometricPrompt
 import com.okta.devices.push.PushRemediation
 import com.okta.devices.push.PushRemediation.UserConsent
 import com.okta.devices.push.PushRemediation.UserVerification
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -38,13 +39,16 @@ suspend fun UserConsent.handleAcceptOrDeny(accept: Boolean): Result<RemediationS
     return result.fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
 }
 
-suspend fun UserVerification.handleUserVerification(result: BiometricPrompt.AuthenticationResult?): Result<RemediationState> {
+suspend fun UserVerification.handleUserVerification(
+    result: BiometricPrompt.AuthenticationResult?,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+): Result<RemediationState> {
     return result?.let { authenticationResult ->
         resolve(authenticationResult)
             .fold({ pushRemediation ->
                 // Accept since user already confirmed, we can also ask for approval.
                 if (pushRemediation is UserConsent) {
-                    withContext(Dispatchers.IO) { pushRemediation.accept().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) }) }
+                    withContext(dispatcher) { pushRemediation.accept().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) }) }
                 } else Result.success(pushRemediation.remediationAsState())
             }, { Result.failure(it) })
     } ?: cancel().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })

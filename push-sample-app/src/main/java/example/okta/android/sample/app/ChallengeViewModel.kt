@@ -26,6 +26,7 @@ import example.okta.android.sample.challenge.handleUserVerification
 import example.okta.android.sample.challenge.remediationAsState
 import example.okta.android.sample.client.AuthenticatorClient
 import example.okta.android.sample.model.UserResponse
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,7 +49,8 @@ class ChallengeViewModel(
     private val authenticatorClient: AuthenticatorClient,
     private val notificationId: Int,
     private val challengeJws: String,
-    private val response: UserResponse
+    private val response: UserResponse,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     class Factory(
@@ -75,7 +77,7 @@ class ChallengeViewModel(
         start()
     }
 
-    private fun start() = viewModelScope.launch(Dispatchers.IO) {
+    private fun start() = viewModelScope.launch(dispatcher) {
         runCatching {
             viewModelScope.launch {
                 try {
@@ -92,13 +94,13 @@ class ChallengeViewModel(
         }.getOrElse { onError(it) }
     }
 
-    fun acceptOrDeny(accept: Boolean, userConsent: PushRemediation.UserConsent) = viewModelScope.launch(Dispatchers.IO) {
+    fun acceptOrDeny(accept: Boolean, userConsent: PushRemediation.UserConsent) = viewModelScope.launch(dispatcher) {
         userConsent.handleAcceptOrDeny(accept)
             .onSuccess { challengeState -> uiStateFlow.update { State.IncomingChallenge(challengeState, response) } }
             .onFailure { onError(it) }
     }
 
-    fun userVerification(userVerification: PushRemediation.UserVerification, result: BiometricPrompt.AuthenticationResult?) = viewModelScope.launch(Dispatchers.IO) {
+    fun userVerification(userVerification: PushRemediation.UserVerification, result: BiometricPrompt.AuthenticationResult?) = viewModelScope.launch(dispatcher) {
         userVerification.handleUserVerification(result)
             .onSuccess { challengeState -> uiStateFlow.update { State.IncomingChallenge(challengeState, response) } }
             .onFailure { onError(it) }

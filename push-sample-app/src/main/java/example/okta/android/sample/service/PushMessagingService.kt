@@ -38,6 +38,7 @@ import example.okta.android.sample.model.UserResponse
 import example.okta.android.sample.model.UserResponse.ACCEPTED
 import example.okta.android.sample.model.UserResponse.DENIED
 import example.okta.android.sample.model.UserResponse.NONE
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart.LAZY
 import kotlinx.coroutines.Dispatchers
@@ -47,8 +48,11 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.Random
 
-class PushMessagingService : FirebaseMessagingService() {
-    private val scope = CoroutineScope(Job() + Dispatchers.IO)
+class PushMessagingService(
+    private val dispatcher1: CoroutineDispatcher = Dispatchers.IO,
+    private val dispatcher2: CoroutineDispatcher = Dispatchers.Unconfined
+) : FirebaseMessagingService() {
+    private val scope = CoroutineScope(Job() + dispatcher1)
     private val notificationBuilder by lazy {
         val channelId = getString(R.string.default_notification_channel_id)
         val channelName = getString(R.string.push_notification_channel_name)
@@ -68,7 +72,7 @@ class PushMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
     }
 
-    private val deferredAuthenticator = scope.async(Dispatchers.Unconfined, start = LAZY) { (application as MyBankApplication).authenticatorClient }
+    private val deferredAuthenticator = scope.async(dispatcher2, start = LAZY) { (application as MyBankApplication).authenticatorClient }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         if (!remoteMessage.data.containsKey(CHALLENGE_KEY)) {
