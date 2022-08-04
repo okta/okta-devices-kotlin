@@ -327,7 +327,7 @@ The completed step is information that transaction was completed successfully, t
 ```kotlin
 private suspend fun handleCompleted(completed: Completed) {
     // print the completed state. 
-    println("If user verification was used ${competed.state.userVerificationUsed}")
+    println("If user verification was used ${completed.state.userVerificationUsed}")
     println("Did user accept this challenge ${competed.state.accepted}")
     println("Exceptions encountered. ${competed.state.throwable}")
 }
