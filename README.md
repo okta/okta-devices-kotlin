@@ -86,12 +86,12 @@ val authenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
 }.getOrThrow()
 ```
 
-If a passphrase isn't provided, then the Devices SDK data will not be encrypted. It is up to you to secure the passphrase. Please store your passphrase in a secure way, in the above example and sample
-app we use Android's [EncryptedSharedPreferences](https://developer.android.com/topic/security/data#kotlin) class
+If a passphrase isn't provided, then the Devices SDK data will not be encrypted. It is up to you to secure the passphrase. Please store your passphrase in a secure way: in the above example and sample
+app we use Android's [EncryptedSharedPreferences](https://developer.android.com/topic/security/data#kotlin) class.
 
 ### Enrollment
 
-Once an authenticator and oidc application has been created, you will also need a Firebase device registration token. After we have met all the requirements, we can start enrolling the user by doing
+Once an authenticator and OIDC application has been created, you will also need a Firebase device registration token. After we have met all the requirements, you can start enrolling the user by doing
 the following:
 
 ```kotlin
@@ -158,8 +158,8 @@ enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
 
 ### Delete enrollment from device
 
-The difference between calling `deleteFromDevice` and `delete` is that `deleteFromDevice` does not make a server call to unenroll push verification, therefore it does not require any authorization.
-Use this with caution as the user will be unable to meet MFA requirements for any sign-in attempt.
+The difference between calling `deleteFromDevice` and `delete` is that `deleteFromDevice` does not make a server call to unenroll push verification. Therefore it does not require any authorization.
+**Use this with caution** as the user will be unable to meet MFA requirements for any sign-in attempt.
 
 ```kotlin
 val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
@@ -233,19 +233,19 @@ graph TD
     PushRemediation --> UserVerification
     PushRemediation --> UserVerificationError
     PushRemediation --> Completed
-    UserConsent --> |user approve or deny?|UserConsentAction{approve/deny}
+    UserConsent --> |User approve or deny?|UserConsentAction{approve/deny}
     UserConsentAction --> |User approved| Completed
     UserConsentAction --> |User denied| Completed
-    UserVerification --> |resolved biometric or cancel?|UserVerificationAction{resolve/cancel}
-    UserVerificationAction --> |resolve| Resolve
-    UserVerificationAction --> |cancel| UserConsent
+    UserVerification --> |Resolved biometric or cancel?|UserVerificationAction{Resolve/Cancel}
+    UserVerificationAction --> |Resolve| Resolve
+    UserVerificationAction --> |Cancel| UserConsent
     Resolve --> Completed
     Resolve --> UserVerificationError
     UserVerificationError --> ResolveError[Resolve]
     ResolveError --> |Corrected error|UserVerification
-    ResolveError --> |Unable to correct. Ask user consent instead?|ConsentOnFailure{true/false}
-    ConsentOnFailure --> |true|UserConsent
-    ConsentOnFailure --> |false|Completed
+    ResolveError --> |Unable to correct. Ask user consent instead?|ConsentOnFailure{True/False}
+    ConsentOnFailure --> |True|UserConsent
+    ConsentOnFailure --> |False|Completed
 ```
 
 For remediation steps that requires user confirmation, it is important to display the information from the `PushChallenge` property in `PushRemediation`. All of the challenge steps can call `deny()`
@@ -253,18 +253,18 @@ to reject the challenge, except the completed step.
 
 #### UserConsent
 
-Display the challenge information and request the user either accept or deny:
+Display the challenge information and request the user to either accept or deny:
 
 ```kotlin
 private suspend fun handleUserConsent(userConsent: UserConsent) = runCatching {
     // Show the following information in a UX dialog and ask the user to accept or deny.
-    // application name: ${userConsent?.challenge?.appInstanceName}")
-    // location of sign in attempt: {userConsent?.challenge?.clientLocation}")
+    // Application name: ${userConsent?.challenge?.appInstanceName}")
+    // Location of sign in attempt: {userConsent?.challenge?.clientLocation}")
     // OS used to sign in: ${userConsent?.challenge?.clientOs}")
     // URL that initiated the sign in: ${userConsent?.challenge?.originUrl}
     // Time of sign in attempt: ${userConsent?.challenge?.transactionTime}
 
-    // Call either userConsent.accept() or     userConsent.deny() depending on user interaction
+    // Call either userConsent.accept() or userConsent.deny() depending on user interaction
 
     // if user accept the challenge
     userConsent.accept()
@@ -285,14 +285,14 @@ Display the challenge information and notify user that a biometric verification 
 
 ```kotlin
 private suspend fun handleUserVerification(userVerification: UserVerification) = runCatching {
-    // Similar to UserConsent. show all the challenge information from userVerification.challenge
+    // Similar to UserConsent, show all the challenge information from userVerification.challenge
     // You can either cancel the UserVerification or resolve with a authenticationResult from BiometricPrompt library
 
     // If user provided biometric verification
     userVerification.resolve(authenticationResult)
         .onSuccess { remediate(it) }
         .onFailure { onError(it) }
-    // if user cancel the biometric prompt
+    // If user cancel the biometric prompt
     userVerification.cancel()
         .onSuccess { remediate(it) }
         .onFailure { onError(it) }
@@ -307,10 +307,10 @@ UserVerificationError can happen if the biometric key is invalid. This can happe
 
 ```kotlin
 private suspend fun handleUserVerificationError(userVerificationError: UserVerificationError) = runCatching {
-    // inspect userVerificationError.securityError property to determine the correct action.
+    // Inspect userVerificationError.securityError property to determine the correct action.
     // If the error is UserVerificationFailed, this is caused by the user failing the biometric challenge.
     // If the error is UserVerificationRequired, this is caused by missing biometric key. To fix this, you can ask
-    // the user to enroll with user verification. Once you are confident the user has corrected, try again by calling resolve
+    // the user to enroll with user verification. Once you are confident the user has corrected the issue, try again by calling resolve.
 
     userVerificationError.resolve()
         .onSuccess { remediate(it) }
@@ -322,7 +322,7 @@ From the diagram in [Remediation steps](#Remediation-steps), the next possible s
 
 #### Completed
 
-The completed step is information that transaction was completed successfully, this does not represent that the user has successfully signed in.
+The complete step contains information about a transaction that was completed successfully by the client. It does not mean that the user has successfully signed in.
 
 ```kotlin
 private suspend fun handleCompleted(completed: Completed) {
