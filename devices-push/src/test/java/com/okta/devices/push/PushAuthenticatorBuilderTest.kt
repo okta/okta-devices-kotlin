@@ -41,6 +41,7 @@ class PushAuthenticatorBuilderTest : BaseTest() {
         // act
         val pushAuthenticator = PushAuthenticatorBuilder.create(appConfig) {
             deviceStore = inMemoryDataStore
+            passphrase = "testing passphrase".toByteArray()
         }
 
         // assert
