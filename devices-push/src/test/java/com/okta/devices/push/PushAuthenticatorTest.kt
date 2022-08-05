@@ -36,7 +36,9 @@ import com.okta.devices.api.time.DeviceClock
 import com.okta.devices.data.repository.KeyType
 import com.okta.devices.data.repository.KeyType.PROOF_OF_POSSESSION_KEY
 import com.okta.devices.data.repository.KeyType.USER_VERIFICATION_KEY
+import com.okta.devices.data.repository.MethodType
 import com.okta.devices.data.repository.MethodType.PUSH
+import com.okta.devices.data.repository.MethodType.UNKNOWN
 import com.okta.devices.data.repository.SettingRequirement
 import com.okta.devices.data.repository.Status.ACTIVE
 import com.okta.devices.data.repository.Status.INACTIVE
@@ -72,6 +74,7 @@ import com.okta.devices.util.UserMediationChallenge
 import com.okta.devices.util.UserVerificationChallenge
 import com.okta.devices.util.UserVerificationChallenge.REQUIRED
 import io.jsonwebtoken.IncorrectClaimException
+import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -482,6 +485,29 @@ class PushAuthenticatorTest : BaseTest() {
         assertThat(error, notNullValue())
         assertThat(error, instanceOf(InternalDeviceError::class.java))
         assertThat(error?.cause, instanceOf(IncorrectClaimException::class.java))
+    }
+
+    @Test
+    fun `parse a non push challenge expect error returned`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow() }
+        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, methodType = UNKNOWN)
+
+        // act
+        val error = runBlocking { authenticator.parseChallenge(pushJws).exceptionOrNull() }
+
+        // assert
+        assertThat(error, notNullValue())
+        assertThat(error is IllegalArgumentException, `is`(true))
+    }
+
+    @Test
+    fun `enroll a non push enrollment parameter expect error returned`() {
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollmentParameters = mockk<EnrollmentParameters>()
+        val enrollment = runBlocking { authenticator.enroll(authToken, config, enrollmentParameters).exceptionOrNull() }
+        assertThat(enrollment is IllegalArgumentException, `is`(true))
     }
 
     @Test
@@ -986,6 +1012,13 @@ class PushAuthenticatorTest : BaseTest() {
 
         // assert
         assertThat(remediation, instanceOf(UserVerification::class.java))
+        val userVerification = remediation as UserVerification
+        val authenticationResult = mockk<AuthenticationResult>()
+
+        val resultDeny = runBlocking { userVerification.deny() }
+        assertThat(resultDeny.isFailure, `is`(true))
+        val resultAccept = runBlocking { userVerification.resolve(authenticationResult) }
+        assertThat(resultAccept.isSuccess, `is`(true))
     }
 
     @Test
@@ -1139,7 +1172,8 @@ class PushAuthenticatorTest : BaseTest() {
         transactionId: String = uuid(),
         transactionTime: String = Date(System.currentTimeMillis()).toString(),
         userVerificationChallenge: UserVerificationChallenge = UserVerificationChallenge.NONE,
-        aud: String = oidcClientId
+        aud: String = oidcClientId,
+        methodType: MethodType = PUSH
     ): String {
         val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
         val enrollmentId = accountInfo.enrollmentInformation.enrollmentId
@@ -1148,7 +1182,7 @@ class PushAuthenticatorTest : BaseTest() {
             serverKey, serverKid, testServer.url, enrollmentId, method.methodId, transactionId = transactionId,
             keyTypes = listOf(keyType.serializedName), transactionTime = transactionTime,
             userMediation = UserMediationChallenge.REQUIRED, userVerification = userVerificationChallenge,
-            aud = aud
+            aud = aud, method = methodType
         )
     }
 }
