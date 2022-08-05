@@ -36,6 +36,7 @@ import com.okta.devices.api.time.DeviceClock
 import com.okta.devices.data.repository.KeyType
 import com.okta.devices.data.repository.KeyType.PROOF_OF_POSSESSION_KEY
 import com.okta.devices.data.repository.KeyType.USER_VERIFICATION_KEY
+import com.okta.devices.data.repository.MethodType
 import com.okta.devices.data.repository.MethodType.PUSH
 import com.okta.devices.data.repository.MethodType.UNKNOWN
 import com.okta.devices.data.repository.SettingRequirement
@@ -491,7 +492,7 @@ class PushAuthenticatorTest : BaseTest() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow() }
-        val pushJws = createNonPushJws(enrollment, PROOF_OF_POSSESSION_KEY)
+        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, methodType = UNKNOWN)
 
         // act
         val error = runBlocking { authenticator.parseChallenge(pushJws).exceptionOrNull() }
@@ -502,7 +503,7 @@ class PushAuthenticatorTest : BaseTest() {
     }
 
     @Test
-    fun `enroll a non push challenge expect error returned`() {
+    fun `enroll a non push enrollment parameter expect error returned`() {
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollmentParameters = mockk<EnrollmentParameters>()
         val enrollment = runBlocking { authenticator.enroll(authToken, config, enrollmentParameters).exceptionOrNull() }
@@ -1007,16 +1008,16 @@ class PushAuthenticatorTest : BaseTest() {
         val pushJws = createPushJws(enrollment, USER_VERIFICATION_KEY, userVerificationChallenge = UserVerificationChallenge.PREFERRED)
 
         // act
-        var remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
 
         // assert
         assertThat(remediation, instanceOf(UserVerification::class.java))
-        remediation = remediation as UserVerification
+        val userVerification = remediation as UserVerification
         val authenticationResult = mockk<AuthenticationResult>()
 
-        val resultDeny = runBlocking { remediation.deny() }
+        val resultDeny = runBlocking { userVerification.deny() }
         assertThat(resultDeny.isFailure, `is`(true))
-        val resultAccept = runBlocking { remediation.resolve(authenticationResult) }
+        val resultAccept = runBlocking { userVerification.resolve(authenticationResult) }
         assertThat(resultAccept.isSuccess, `is`(true))
     }
 
@@ -1171,7 +1172,8 @@ class PushAuthenticatorTest : BaseTest() {
         transactionId: String = uuid(),
         transactionTime: String = Date(System.currentTimeMillis()).toString(),
         userVerificationChallenge: UserVerificationChallenge = UserVerificationChallenge.NONE,
-        aud: String = oidcClientId
+        aud: String = oidcClientId,
+        methodType: MethodType = PUSH
     ): String {
         val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
         val enrollmentId = accountInfo.enrollmentInformation.enrollmentId
@@ -1180,26 +1182,7 @@ class PushAuthenticatorTest : BaseTest() {
             serverKey, serverKid, testServer.url, enrollmentId, method.methodId, transactionId = transactionId,
             keyTypes = listOf(keyType.serializedName), transactionTime = transactionTime,
             userMediation = UserMediationChallenge.REQUIRED, userVerification = userVerificationChallenge,
-            aud = aud
-        )
-    }
-
-    private fun createNonPushJws(
-        enrollment: PushEnrollment,
-        keyType: KeyType,
-        transactionId: String = uuid(),
-        transactionTime: String = Date(System.currentTimeMillis()).toString(),
-        userVerificationChallenge: UserVerificationChallenge = UserVerificationChallenge.NONE,
-        aud: String = oidcClientId
-    ): String {
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val enrollmentId = accountInfo.enrollmentInformation.enrollmentId
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
-        return createIdxPushJws(
-            serverKey, serverKid, testServer.url, enrollmentId, method.methodId, transactionId = transactionId,
-            keyTypes = listOf(keyType.serializedName), transactionTime = transactionTime,
-            userMediation = UserMediationChallenge.REQUIRED, userVerification = userVerificationChallenge,
-            aud = aud, method = UNKNOWN
+            aud = aud, method = methodType
         )
     }
 }
