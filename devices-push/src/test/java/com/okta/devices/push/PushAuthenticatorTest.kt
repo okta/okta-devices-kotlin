@@ -487,7 +487,7 @@ class PushAuthenticatorTest : BaseTest() {
     }
 
     @Test
-    fun `parse a non push challenge expect error returned`(){
+    fun `parse a non push challenge expect error returned`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow() }
@@ -502,11 +502,11 @@ class PushAuthenticatorTest : BaseTest() {
     }
 
     @Test
-    fun `enroll a non push challenge expect error returned`(){
+    fun `enroll a non push challenge expect error returned`() {
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollmentParameters = mockk<EnrollmentParameters>()
         val enrollment = runBlocking { authenticator.enroll(authToken, config, enrollmentParameters).exceptionOrNull() }
-        assertThat(enrollment is IllegalArgumentException,`is`(true))
+        assertThat(enrollment is IllegalArgumentException, `is`(true))
     }
 
     @Test
@@ -1015,10 +1015,9 @@ class PushAuthenticatorTest : BaseTest() {
         val authenticationResult = mockk<AuthenticationResult>()
 
         val resultDeny = runBlocking { remediation.deny() }
-        assertThat(resultDeny.isFailure,`is`(true))
-        val resultAccept = runBlocking{ remediation.resolve(authenticationResult) }
-        assertThat(resultAccept.isSuccess,`is`(true))
-
+        assertThat(resultDeny.isFailure, `is`(true))
+        val resultAccept = runBlocking { remediation.resolve(authenticationResult) }
+        assertThat(resultAccept.isSuccess, `is`(true))
     }
 
     @Test
