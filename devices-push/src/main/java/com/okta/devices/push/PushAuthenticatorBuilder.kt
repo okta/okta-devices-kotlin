@@ -17,6 +17,7 @@ package com.okta.devices.push
 import android.app.Application
 import android.content.Context
 import com.okta.devices.BuildConfig
+import com.okta.devices.DeviceAuthenticatorCore
 import com.okta.devices.api.device.DeviceInfoCollector
 import com.okta.devices.api.http.DeviceHttpClient
 import com.okta.devices.api.log.DeviceLog
@@ -84,7 +85,7 @@ class PushAuthenticatorBuilder internal constructor(context: Application) {
             val builder = PushAuthenticatorBuilder(appConfig.context)
             buildAction?.invoke(builder)
             val modules = builder.build(appConfig.context)
-            Result.success(PushAuthenticatorImpl(appConfig, modules))
+            Result.success(PushAuthenticatorImpl(DeviceAuthenticatorCore(appConfig, modules)))
         }.getOrElse { Result.failure(it) }
     }
 

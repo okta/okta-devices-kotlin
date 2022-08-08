@@ -50,12 +50,12 @@ If you run into problems using the SDK, you can:
 
 ## Getting started
 
-// TODO link to setup custom authenticator // TODO link to setup push provider // TODO list and explain why [OIDC SDK](https://github.com/okta/okta-oidc-android)
-or [IDX SDK](https://github.com/okta/okta-idx-android) is required. Firebase messaging SDK is required
-
-See the [Push Sample App] for a complete implementation.
+To use this SDK you will need to create a custom authenticator on your Okta service and provide your push notification credentials.  
+See [Custom authenticator integration guide] for more details.
 
 - **Kotlin Coroutines**: The following sample code assumes that suspend functions are called in a coroutine scope. See [Kotlin Coroutines] for more information.
+
+See the [Push Sample App] for a complete implementation.
 
 ### Installation
 
@@ -354,3 +354,5 @@ We are happy to accept contributions and PRs! Please see the [contribution guide
 [Kotlin coroutines]: https://kotlinlang.org/docs/coroutines-overview.html
 
 [PushMessagingService]: https://github.com/okta/okta-devices-kotlin/blob/master/push-sample-app/src/main/java/example/okta/android/sample/service/PushMessagingService.kt
+
+[Custom authenticator integration guide]: https://developer.okta.com/docs/guides/authenticators-custom-authenticator/android/main/

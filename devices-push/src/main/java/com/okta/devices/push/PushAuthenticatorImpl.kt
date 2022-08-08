@@ -16,16 +16,13 @@ package com.okta.devices.push
 
 import com.okta.devices.DeviceAuthenticatorCore
 import com.okta.devices.api.DeviceAuthenticator
-import com.okta.devices.api.model.ApplicationConfig
 import com.okta.devices.api.model.AuthToken
 import com.okta.devices.api.model.DeviceAuthenticatorConfig
 import com.okta.devices.api.model.EnrollmentParameters
 import com.okta.devices.authenticator.DeviceAuthenticatorImpl
-import com.okta.devices.authenticator.Modules
 import com.okta.devices.authenticator.exceptions.toResult
 import com.okta.devices.authenticator.model.ChallengeContext
 import com.okta.devices.data.repository.MethodType.PUSH
-import com.okta.devices.device.DeviceTrust
 import com.okta.devices.model.AuthorizationToken
 import com.okta.devices.model.EnrollmentCoreParameters
 import com.okta.devices.model.deviceError
@@ -34,24 +31,7 @@ import com.okta.devices.push.api.PushChallenge
 import com.okta.devices.push.api.PushEnrollment
 import com.okta.devices.util.baseUrl
 
-internal class PushAuthenticatorImpl(
-    appConfig: ApplicationConfig,
-    modules: Modules,
-    private val deviceAuthenticator: DeviceAuthenticatorImpl = DeviceAuthenticatorImpl(appConfig, modules)
-) : PushAuthenticator, DeviceAuthenticator by deviceAuthenticator {
-
-    private val core: DeviceAuthenticatorCore = with(modules) {
-        DeviceAuthenticatorCore(
-            appConfig.context,
-            deviceStore,
-            cryptoFactory,
-            httpClient,
-            deviceLog,
-            deviceClock,
-            DeviceTrust(modules.deviceInfoCollector),
-            coroutineScope
-        )
-    }
+internal class PushAuthenticatorImpl(private val core: DeviceAuthenticatorCore) : PushAuthenticator, DeviceAuthenticator by DeviceAuthenticatorImpl(core) {
 
     override suspend fun parseChallenge(challenge: String, allowedClockSkewInSeconds: Long): Result<PushChallenge> = runCatching {
         val challengeInfo = core.parseJws(challenge, allowedClockSkewInSeconds).getOrElse { return Result.failure(it) }

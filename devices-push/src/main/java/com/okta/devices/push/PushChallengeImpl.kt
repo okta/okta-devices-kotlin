@@ -38,6 +38,7 @@ internal class PushChallengeImpl(private val ctx: ChallengeContext, private val 
     override val clientOs: String = info.clientOs
 
     override val originUrl: String = info.issuer
+    override val transactionId: String = info.transactionId
     override val transactionTime: String = info.transactionTime
     override val expiration: Long = info.expiration
     override val appInstanceName: String = info.appInstanceName
