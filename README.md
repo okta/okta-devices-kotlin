@@ -14,6 +14,7 @@ This library is Okta's multi-factor push authentication service that provides a 
     - [Installation](#Installation)
     - [Usage](#Usage)
         - [Creation](#Creation)
+        - [Proguard](#Proguard)
         - [Enrollment](#Enrollment)
             - [Retrieve existing enrollments](#Retrieve-existing-enrollments)
             - [Update registration token](#Update-registration-token)
@@ -88,6 +89,16 @@ val authenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
 
 If a passphrase isn't provided, then the Devices SDK data will not be encrypted. It is up to you to secure the passphrase. Please store your passphrase in a secure way: in the above example and sample
 app we use Android's [EncryptedSharedPreferences](https://developer.android.com/topic/security/data#kotlin) class.
+
+
+### Proguard
+
+If encryption is enabled, add the following to your proguard configuration file:
+
+```text
+-keep,includedescriptorclasses class net.sqlcipher.** { *; }
+-keep,includedescriptorclasses interface net.sqlcipher.** { *; }
+```
 
 ### Enrollment
 
