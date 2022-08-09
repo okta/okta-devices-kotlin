@@ -5,6 +5,7 @@
 
 This library is Okta's multi-factor push authentication service that provides a way for you to implement MFA in your Android application.
 
+
 **Table of Contents**
 
 - [Okta Devices SDK](#okta-devices-sdk)
