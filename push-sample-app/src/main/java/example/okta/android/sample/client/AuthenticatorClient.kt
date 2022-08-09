@@ -16,9 +16,15 @@ package example.okta.android.sample.client
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties.BLOCK_MODE_GCM
+import android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE
+import android.security.keystore.KeyProperties.PURPOSE_DECRYPT
+import android.security.keystore.KeyProperties.PURPOSE_ENCRYPT
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import androidx.security.crypto.MasterKeys.AES256_GCM_SPEC
+import androidx.security.crypto.MasterKey.DEFAULT_AES_GCM_MASTER_KEY_SIZE
+import androidx.security.crypto.MasterKey.DEFAULT_MASTER_KEY_ALIAS
 import com.okta.devices.api.log.DeviceLog
 import com.okta.devices.api.model.ApplicationConfig
 import com.okta.devices.api.model.DeviceAuthenticatorConfig
@@ -45,17 +51,21 @@ import java.net.URL
  * @param app
  */
 class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClient) {
-    private val masterKey: MasterKey = MasterKey.Builder(app).setKeyGenParameterSpec(AES256_GCM_SPEC).build()
+    private val masterKey: MasterKey = MasterKey.Builder(app).setKeyGenParameterSpec(
+        KeyGenParameterSpec.Builder(DEFAULT_MASTER_KEY_ALIAS, PURPOSE_ENCRYPT or PURPOSE_DECRYPT)
+            .setBlockModes(BLOCK_MODE_GCM)
+            .setEncryptionPaddings(ENCRYPTION_PADDING_NONE)
+            .setKeySize(DEFAULT_AES_GCM_MASTER_KEY_SIZE).build()
+    ).build()
 
+    private val passphraseSharedPref: String = "passphraseSharedPref"
     private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
         app,
-        "passphrase",
+        passphraseSharedPref,
         masterKey,
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
-
-    private val passphraseKey: String = "passphrase"
 
     private val passphraseLength: Int = 64
 
@@ -126,10 +136,11 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
         repeat(passphraseLength) {
             sb.append(allowedChars.random())
         }
-        sharedPreferences.edit().putString(passphraseKey, sb.toString()).commit()
+        sharedPreferences.edit().putString(passphraseSharedPref, sb.toString()).commit()
         return sb.toString()
     }
+
     private fun getPassphrase(): String {
-        return sharedPreferences.getString(passphraseKey, null) ?: generatePassphrase()
+        return sharedPreferences.getString(passphraseSharedPref, null) ?: generatePassphrase()
     }
 }

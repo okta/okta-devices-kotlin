@@ -82,7 +82,7 @@ dependencies {
     testImplementation("androidx.test.ext:junit-ktx:${Version.extJunit}")
     testImplementation("org.robolectric:robolectric:4.8.1")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.10.0")
-    testImplementation("io.mockk:mockk:1.12.4")
+    testImplementation("io.mockk:mockk:1.12.5")
     testImplementation("org.hamcrest:hamcrest-library:2.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Version.kotlinSerialization}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-properties:${Version.kotlinSerialization}")
