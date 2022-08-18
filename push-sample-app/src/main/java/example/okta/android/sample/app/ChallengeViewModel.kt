@@ -25,6 +25,7 @@ import example.okta.android.sample.challenge.handleAcceptOrDeny
 import example.okta.android.sample.challenge.handleUserVerification
 import example.okta.android.sample.challenge.remediationAsState
 import example.okta.android.sample.client.AuthenticatorClient
+import example.okta.android.sample.errors.BiometricError
 import example.okta.android.sample.model.UserResponse
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -100,8 +101,12 @@ class ChallengeViewModel(
             .onFailure { onError(it) }
     }
 
-    fun userVerification(userVerification: PushRemediation.UserVerification, result: BiometricPrompt.AuthenticationResult?) = viewModelScope.launch(dispatcher) {
-        userVerification.handleUserVerification(result)
+    fun userVerification(
+        userVerification: PushRemediation.UserVerification,
+        result: BiometricPrompt.AuthenticationResult?,
+        biometricError: BiometricError? = null
+    ) = viewModelScope.launch(dispatcher) {
+        userVerification.handleUserVerification(result, biometricError = biometricError)
             .onSuccess { challengeState -> uiStateFlow.update { State.IncomingChallenge(challengeState, response) } }
             .onFailure { onError(it) }
     }

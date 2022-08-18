@@ -18,6 +18,7 @@ import androidx.biometric.BiometricPrompt
 import com.okta.devices.push.PushRemediation
 import com.okta.devices.push.PushRemediation.UserConsent
 import com.okta.devices.push.PushRemediation.UserVerification
+import example.okta.android.sample.errors.BiometricError
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,7 +42,8 @@ suspend fun UserConsent.handleAcceptOrDeny(accept: Boolean): Result<RemediationS
 
 suspend fun UserVerification.handleUserVerification(
     result: BiometricPrompt.AuthenticationResult?,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    biometricError: BiometricError? = null
 ): Result<RemediationState> {
     return result?.let { authenticationResult ->
         resolve(authenticationResult)
@@ -51,5 +53,10 @@ suspend fun UserVerification.handleUserVerification(
                     withContext(dispatcher) { pushRemediation.accept().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) }) }
                 } else Result.success(pushRemediation.remediationAsState())
             }, { Result.failure(it) })
-    } ?: cancel().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+    } ?: when (biometricError) {
+        null -> cancel().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+        is BiometricError.UvTemporaryUnavailable -> uvUnavailableTemporary().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+        is BiometricError.UvPermanentlyUnavailable -> uvUnavailablePermanent().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+        else -> cancel().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+    }
 }

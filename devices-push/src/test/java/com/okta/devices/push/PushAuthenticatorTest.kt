@@ -731,6 +731,70 @@ class PushAuthenticatorTest : BaseTest() {
     }
 
     @Test
+    fun `call challenge resolve when biometric is locked then accept consent, expect successful complete status`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking {
+            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+        }
+        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
+        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
+        val transactionId = uuid()
+        val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
+
+        // sign in
+        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, transactionId, pushChallengeJws)
+
+        // act
+        val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
+
+        when (val remediation = parseResult.resolve().getOrThrow()) {
+            is UserVerification -> {
+                val userConsent = remediation.uvUnavailableTemporary().getOrThrow() as UserConsent
+                val completed = runBlocking { userConsent.accept().getOrThrow() as Completed }
+
+                // assert
+                assertThat(completed.state.userVerificationUsed, `is`(false))
+                assertThat(completed.state.accepted, `is`(true))
+                assertThat(completed.state.throwable, `is`(nullValue()))
+            }
+            else -> Assert.fail("UserVerification remediation expected")
+        }
+    }
+
+    @Test
+    fun `call challenge resolve when biometric is removed then accept consent, expect successful complete status`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking {
+            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+        }
+        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
+        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
+        val transactionId = uuid()
+        val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
+
+        // sign in
+        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, transactionId, pushChallengeJws)
+
+        // act
+        val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
+
+        when (val remediation = parseResult.resolve().getOrThrow()) {
+            is UserVerification -> {
+                val userConsent = remediation.uvUnavailablePermanent().getOrThrow() as UserConsent
+                val completed = runBlocking { userConsent.accept().getOrThrow() as Completed }
+
+                // assert
+                assertThat(completed.state.userVerificationUsed, `is`(false))
+                assertThat(completed.state.accepted, `is`(true))
+                assertThat(completed.state.throwable, `is`(nullValue()))
+            }
+            else -> Assert.fail("UserVerification remediation expected")
+        }
+    }
+
+    @Test
     fun `remediate unrecoverable UV then resolve without consent on failure, expect unrecoverable key returned`() {
         // arrange
         val keySigner: SignatureProvider = object : SignatureProvider by testKeyStore.testSigner {

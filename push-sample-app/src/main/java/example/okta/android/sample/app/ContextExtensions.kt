@@ -42,6 +42,8 @@ suspend fun AppCompatActivity.handleBiometric(signature: Signature?): BiometricP
                 Timber.e("onAuthenticatorError $errorCode $errString")
                 val exception = when (errorCode) {
                     ERROR_USER_CANCELED, ERROR_NEGATIVE_BUTTON -> BiometricError.UserCancel(errorCode, errString)
+                    BiometricPrompt.ERROR_LOCKOUT, BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> BiometricError.UvTemporaryUnavailable(errorCode, errString)
+                    BiometricPrompt.ERROR_NO_BIOMETRICS -> BiometricError.UvPermanentlyUnavailable(errorCode, errString)
                     else -> BiometricError.Error(errorCode, errString)
                 }
                 continuation.resumeWithException(exception)

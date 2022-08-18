@@ -11,7 +11,7 @@ object Version {
     const val compose = "1.3.0-alpha02"
     const val composeCompiler = "1.2.0"
     const val devicesAuthenticator = "0.0.1"
-    const val devicesCore = "0.0.1"
+    const val devicesCore = "0.0.2-SNAPSHOT"
     const val devicesStorage = "0.0.1"
     const val devicesFakeServer = "0.0.1"
 }

@@ -16,5 +16,7 @@ package example.okta.android.sample.errors
 
 sealed class BiometricError(errorCode: Int, errString: CharSequence) : Exception("errorCode $errorCode errString $errString") {
     class UserCancel(errorCode: Int, errString: CharSequence) : BiometricError(errorCode, errString)
+    class UvTemporaryUnavailable(errorCode: Int, errString: CharSequence) : BiometricError(errorCode, errString)
+    class UvPermanentlyUnavailable(errorCode: Int, errString: CharSequence) : BiometricError(errorCode, errString)
     class Error(errorCode: Int, errString: CharSequence) : BiometricError(errorCode, errString)
 }
