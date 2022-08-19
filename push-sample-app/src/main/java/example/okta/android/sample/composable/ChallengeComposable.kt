@@ -69,10 +69,7 @@ fun HandleIncomingChallenge(incomingChallenge: IncomingChallenge, viewModel: Cha
                     viewModel.userVerification(remediationState.userVerification, result)
                 }.onFailure {
                     when (it) {
-                        is BiometricError.UserCancel,
-                        is BiometricError.Error,
-                        is BiometricError.UvTemporaryUnavailable,
-                        is BiometricError.UvPermanentlyUnavailable -> viewModel.userVerification(remediationState.userVerification, null, it as BiometricError)
+                        is BiometricError -> viewModel.userVerification(remediationState.userVerification, null, it)
                         else -> viewModel.onError(it)
                     }
                 }

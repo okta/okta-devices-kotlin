@@ -750,7 +750,7 @@ class PushAuthenticatorTest : BaseTest() {
 
         when (val remediation = parseResult.resolve().getOrThrow()) {
             is UserVerification -> {
-                val userConsent = remediation.uvUnavailableTemporary().getOrThrow() as UserConsent
+                val userConsent = remediation.temporarilyUnavailable().getOrThrow() as UserConsent
                 val completed = runBlocking { userConsent.accept().getOrThrow() as Completed }
 
                 // assert
@@ -782,7 +782,7 @@ class PushAuthenticatorTest : BaseTest() {
 
         when (val remediation = parseResult.resolve().getOrThrow()) {
             is UserVerification -> {
-                val userConsent = remediation.uvUnavailablePermanent().getOrThrow() as UserConsent
+                val userConsent = remediation.permanentlyUnavailable().getOrThrow() as UserConsent
                 val completed = runBlocking { userConsent.accept().getOrThrow() as Completed }
 
                 // assert

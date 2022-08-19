@@ -124,7 +124,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          *
          * @return [Result] if successful the next [Remediation] step will be [UserConsent]
          */
-        fun uvUnavailableTemporary(): Result<PushRemediation> {
+        fun temporarilyUnavailable(): Result<PushRemediation> {
             val authedCtx = ctx.copy(consentResponse = UV_TEMPORARILY_UNAVAILABLE)
             return Result.success(UserConsent(challenge, authedCtx))
         }
@@ -134,7 +134,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          *
          * @return [Result] if successful the next [Remediation] step will be [UserConsent]
          */
-        fun uvUnavailablePermanent(): Result<PushRemediation> {
+        fun permanentlyUnavailable(): Result<PushRemediation> {
             val authedCtx = ctx.copy(consentResponse = UV_PERMANENTLY_UNAVAILABLE)
             return Result.success(UserConsent(challenge, authedCtx))
         }

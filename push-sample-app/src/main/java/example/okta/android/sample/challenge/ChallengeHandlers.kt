@@ -54,9 +54,8 @@ suspend fun UserVerification.handleUserVerification(
                 } else Result.success(pushRemediation.remediationAsState())
             }, { Result.failure(it) })
     } ?: when (biometricError) {
-        null -> cancel().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
-        is BiometricError.UvTemporaryUnavailable -> uvUnavailableTemporary().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
-        is BiometricError.UvPermanentlyUnavailable -> uvUnavailablePermanent().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+        is BiometricError.TemporaryUnavailable -> temporarilyUnavailable().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+        is BiometricError.PermanentlyUnavailable -> permanentlyUnavailable().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
         else -> cancel().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
     }
 }
