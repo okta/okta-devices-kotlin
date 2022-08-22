@@ -26,6 +26,7 @@ import com.okta.devices.util.ConsentResponse.APPROVED_USER_VERIFICATION
 import com.okta.devices.util.ConsentResponse.CANCELLED_USER_VERIFICATION
 import com.okta.devices.util.ConsentResponse.UV_PERMANENTLY_UNAVAILABLE
 import com.okta.devices.util.ConsentResponse.UV_TEMPORARILY_UNAVAILABLE
+import com.okta.devices.util.UserVerificationChallenge
 import java.security.Signature
 
 /**
@@ -64,7 +65,9 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          * @return [Result] If successful a completed [Remediation].
          */
         suspend fun accept(exp: Long = 5L): Result<PushRemediation> {
-            val acceptedCtx = if (ctx.consentResponse != APPROVED_USER_VERIFICATION) ctx.copy(consentResponse = APPROVED_CONSENT_PROMPT) else ctx
+            val acceptedCtx = if (ctx.consentResponse != APPROVED_USER_VERIFICATION &&
+                ctx.challengeInformation.userVerificationChallenge != UserVerificationChallenge.REQUIRED
+            ) ctx.copy(consentResponse = APPROVED_CONSENT_PROMPT) else ctx
             return acceptedCtx.verify(exp).fold(
                 { Result.success(Completed(challenge, acceptedCtx, it)) },
                 { Result.failure(it) }
