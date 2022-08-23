@@ -65,9 +65,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          * @return [Result] If successful a completed [Remediation].
          */
         suspend fun accept(exp: Long = 5L): Result<PushRemediation> {
-            val acceptedCtx = if (ctx.consentResponse != APPROVED_USER_VERIFICATION &&
-                ctx.challengeInformation.userVerificationChallenge != UserVerificationChallenge.REQUIRED
-            ) ctx.copy(consentResponse = APPROVED_CONSENT_PROMPT) else ctx
+            val acceptedCtx = if (ctx.consentResponse != APPROVED_USER_VERIFICATION) ctx.copy(consentResponse = APPROVED_CONSENT_PROMPT) else ctx
             return acceptedCtx.verify(exp).fold(
                 { Result.success(Completed(challenge, acceptedCtx, it)) },
                 { Result.failure(it) }
@@ -128,7 +126,8 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          * @return [Result] if successful the next [Remediation] step will be [UserConsent]
          */
         fun temporarilyUnavailable(): Result<PushRemediation> {
-            val authedCtx = ctx.copy(consentResponse = UV_TEMPORARILY_UNAVAILABLE)
+            val authedCtx = if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) ctx.copy(consentResponse = UV_TEMPORARILY_UNAVAILABLE)
+            else ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
             return Result.success(UserConsent(challenge, authedCtx))
         }
 
@@ -138,7 +137,8 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          * @return [Result] if successful the next [Remediation] step will be [UserConsent]
          */
         fun permanentlyUnavailable(): Result<PushRemediation> {
-            val authedCtx = ctx.copy(consentResponse = UV_PERMANENTLY_UNAVAILABLE)
+            val authedCtx = if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) ctx.copy(consentResponse = UV_PERMANENTLY_UNAVAILABLE)
+            else ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
             return Result.success(UserConsent(challenge, authedCtx))
         }
 
