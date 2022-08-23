@@ -24,6 +24,9 @@ import com.okta.devices.util.ConsentResponse
 import com.okta.devices.util.ConsentResponse.APPROVED_CONSENT_PROMPT
 import com.okta.devices.util.ConsentResponse.APPROVED_USER_VERIFICATION
 import com.okta.devices.util.ConsentResponse.CANCELLED_USER_VERIFICATION
+import com.okta.devices.util.ConsentResponse.UV_PERMANENTLY_UNAVAILABLE
+import com.okta.devices.util.ConsentResponse.UV_TEMPORARILY_UNAVAILABLE
+import com.okta.devices.util.UserVerificationChallenge
 import java.security.Signature
 
 /**
@@ -114,6 +117,28 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          */
         fun cancel(): Result<PushRemediation> {
             val authedCtx = ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
+            return Result.success(UserConsent(challenge, authedCtx))
+        }
+
+        /**
+         * Biometric is temporary unavailable due to lock up, ask for user approval instead
+         *
+         * @return [Result] if successful the next [Remediation] step will be [UserConsent]
+         */
+        fun temporarilyUnavailable(): Result<PushRemediation> {
+            val authedCtx = if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) ctx.copy(consentResponse = UV_TEMPORARILY_UNAVAILABLE)
+            else ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
+            return Result.success(UserConsent(challenge, authedCtx))
+        }
+
+        /**
+         * Biometric is removed from device, ask for user approval instead
+         *
+         * @return [Result] if successful the next [Remediation] step will be [UserConsent]
+         */
+        fun permanentlyUnavailable(): Result<PushRemediation> {
+            val authedCtx = if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) ctx.copy(consentResponse = UV_PERMANENTLY_UNAVAILABLE)
+            else ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
             return Result.success(UserConsent(challenge, authedCtx))
         }
 

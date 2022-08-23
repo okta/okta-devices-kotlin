@@ -68,8 +68,10 @@ fun HandleIncomingChallenge(incomingChallenge: IncomingChallenge, viewModel: Cha
                     val result = activity.handleBiometric(remediationState.userVerification.signature)
                     viewModel.userVerification(remediationState.userVerification, result)
                 }.onFailure {
-                    if (it is BiometricError.UserCancel || it is BiometricError.Error) viewModel.userVerification(remediationState.userVerification, null)
-                    else viewModel.onError(it)
+                    when (it) {
+                        is BiometricError -> viewModel.userVerification(remediationState.userVerification, null, it)
+                        else -> viewModel.onError(it)
+                    }
                 }
             }
             is RemediationState.UserVerificationErrorState -> viewModel.onError(remediationState.userVerificationError.securityError)
