@@ -35,3 +35,8 @@ style :
     active : true
     allowedNames : '(_|ignored|expected|serialVersionUID)'
     ignoreAnnotated : [ 'Preview' ]
+complexity:
+  LongMethod :
+    active : true
+    threshold : 120
+    ignoreAnnotated : [ 'ParameterizedRobolectricTestRunner.Parameters' ]
