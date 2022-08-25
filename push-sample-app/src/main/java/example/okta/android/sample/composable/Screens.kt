@@ -14,6 +14,11 @@
  */
 package example.okta.android.sample.composable
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,15 +38,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight.Companion.W400
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.okta.devices.push.PushRemediation
 import example.okta.android.sample.Constants
 import example.okta.android.sample.R
+import example.okta.android.sample.app.MainActivity
 import example.okta.android.sample.model.UserStatus
 import example.okta.android.sample.model.UserStatusPreview
 
@@ -75,6 +83,10 @@ fun SignInScreen(signInAction: () -> Unit = {}) {
 @Preview
 fun SetupPushScreen(notNow: () -> Unit = {}, setUp: (enableUv: Boolean) -> Unit = { _ -> }) {
     val (initialState, showDialog) = remember { mutableStateOf(false) }
+    val context = LocalContext.current as MainActivity
+    val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission(), onResult = { isGranted: Boolean ->
+        if (isGranted) showDialog(true) else notNow()
+    })
     MagentaBankScaffold(stringResource(id = R.string.app_name)) {
         Column(
             modifier = Modifier
@@ -98,7 +110,6 @@ fun SetupPushScreen(notNow: () -> Unit = {}, setUp: (enableUv: Boolean) -> Unit 
                     fontSize = 16.sp
                 )
             }
-
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -112,9 +123,14 @@ fun SetupPushScreen(notNow: () -> Unit = {}, setUp: (enableUv: Boolean) -> Unit 
                     false
                 )
                 Spacer(Modifier.size(24.dp))
-
-                CommonButton(modifier = Modifier.weight(1f), { showDialog(true) }, stringResource(id = R.string.set_up))
-
+                CommonButton(modifier = Modifier.weight(1f), {
+                    when {
+                        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> showDialog(true)
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED -> showDialog(true)
+                        context.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> notNow()
+                        else -> launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }, stringResource(id = R.string.set_up))
                 // dialog
                 CommonDialog(
                     summary = stringResource(id = R.string.enable_uv),
