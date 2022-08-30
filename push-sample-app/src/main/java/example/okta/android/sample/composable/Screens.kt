@@ -127,7 +127,7 @@ fun SetupPushScreen(notNow: () -> Unit = {}, setUp: (enableUv: Boolean) -> Unit 
                     when {
                         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> showDialog(true)
                         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED -> showDialog(true)
-                        context.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> notNow()
+                        context.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         else -> launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }, stringResource(id = R.string.set_up))
