@@ -23,6 +23,8 @@ class MyBankApplication : Application() {
     val oidcClient: OktaOidcClient by lazy { OktaOidcClient(this) }
     val authenticatorClient: AuthenticatorClient by lazy { AuthenticatorClient(this, oidcClient) }
 
+
+    
     override fun onCreate() {
         super.onCreate()
         Timber.Forest.plant(Timber.DebugTree())
