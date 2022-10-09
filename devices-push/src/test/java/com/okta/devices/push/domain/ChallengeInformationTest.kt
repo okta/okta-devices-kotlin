@@ -24,6 +24,7 @@ import com.okta.devices.fake.util.FakeKeyStore
 import com.okta.devices.fake.util.uuid
 import com.okta.devices.model.local.ChallengeInformation
 import com.okta.devices.push.utils.BaseTest
+import com.okta.devices.util.TransactionType
 import com.okta.devices.util.UserMediationChallenge
 import com.okta.devices.util.UserVerificationChallenge
 import io.jsonwebtoken.Jwts
@@ -53,7 +54,8 @@ class ChallengeInformationTest : BaseTest() {
         val exp = iat + TimeUnit.MINUTES.toMillis(5)
         val method = PUSH
         val transactionId = uuid()
-        val transactionType = "LOGIN"
+        val transactionType = TransactionType.LOGIN
+        val bindingMessage = "bindingMessage"
         val transactionTime = Date(System.currentTimeMillis()).toString()
         val clientLocation = "San Francisco, CA, USA"
         val clientOs = "Mac OS X"
@@ -73,7 +75,7 @@ class ChallengeInformationTest : BaseTest() {
 
         val pushJws = createIdxPushJws(
             serverKey, serverKid, issuer, authenticatorEnrollmentId, methodEnrollmentId, aud,
-            iat, nbf, exp, method, transactionId, transactionType, transactionTime, clientLocation, clientOs,
+            iat, nbf, exp, method, transactionId, transactionType, bindingMessage, transactionTime, clientLocation, clientOs,
             keyTypes, riskLevel, challengeTextItems, unusualActivities, requestReferrer, appInstanceName,
             userMediationChallenge, userVerificationChallenge, requiredSignals, requiredSignalProviders,
             loginHint, orgId, userId
@@ -94,6 +96,7 @@ class ChallengeInformationTest : BaseTest() {
         assertThat(challengeInfo.method, `is`(method))
         assertThat(challengeInfo.transactionId, `is`(transactionId))
         assertThat(challengeInfo.transactionType, `is`(transactionType))
+        assertThat(challengeInfo.bindingMessage, `is`(bindingMessage))
         assertThat(challengeInfo.transactionTime, `is`(transactionTime))
         assertThat(challengeInfo.clientLocation, `is`(clientLocation))
         assertThat(challengeInfo.clientOs, `is`(clientOs))
