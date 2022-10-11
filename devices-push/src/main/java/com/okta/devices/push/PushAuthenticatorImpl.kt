@@ -51,7 +51,8 @@ internal class PushAuthenticatorImpl(private val core: DeviceAuthenticatorCore) 
             methodTypes = listOf(PUSH),
             authToken = AuthorizationToken.Bearer(authToken.token),
             pushToken = params.registrationToken.get(),
-            userVerificationEnabled = params.enableUserVerification
+            userVerificationEnabled = params.enableUserVerification,
+            cibaEnabled = params.enableCiba
         )
         return core.enroll(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
             { Result.success(PushEnrollmentImpl(it)) },

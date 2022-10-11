@@ -54,11 +54,17 @@ internal class PushChallengeImpl(private val ctx: ChallengeContext, private val 
     override fun resolve(): Result<PushRemediation> = runCatching {
         val userVerification = info.userVerificationChallenge
         if (!validTime) return Result.failure(DeviceAuthenticatorError.SecurityError.InvalidToken(ErrorCode.INVALID_OR_EXPIRED_TOKEN.value, "Expired token, check device clock"))
+        if (ctx.challengeInformation.transactionType == com.okta.devices.util.TransactionType.CIBA && !ctx.baseEnrollment.cibaEnabled()) {
+            return Result.failure(DeviceAuthenticatorError.SecurityError.UnsupportedTransactionType(ErrorCode.UNSUPPORTED_TRANSACTION_TYPE.value, "Transaction type not supported"))
+        }
 
         val remediation = when {
             userVerification == REQUIRED && !ctx.uvEnabled -> UserVerificationError(this, ctx, UserVerificationRequired(USER_VERIFICATION_FAILED.value, ""))
             (userVerification == PREFERRED && ctx.uvEnabled) || userVerification == REQUIRED -> UserVerification(this, ctx, ctx.baseEnrollment.userVerificationSignature())
-            else -> UserConsent(this, ctx)
+            else -> when (ctx.challengeInformation.transactionType) {
+                com.okta.devices.util.TransactionType.LOGIN -> UserConsent(this, ctx)
+                com.okta.devices.util.TransactionType.CIBA -> PushRemediation.CibaConsent(this, ctx)
+            }
         }
         Result.success(remediation)
     }.getOrElse {
