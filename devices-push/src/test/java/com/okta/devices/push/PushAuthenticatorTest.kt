@@ -70,6 +70,7 @@ import com.okta.devices.push.utils.TestDeviceStore
 import com.okta.devices.storage.AuthenticatorDatabase
 import com.okta.devices.storage.EncryptionOption
 import com.okta.devices.storage.api.DeviceStore
+import com.okta.devices.util.TransactionType
 import com.okta.devices.util.UserMediationChallenge
 import com.okta.devices.util.UserVerificationChallenge
 import com.okta.devices.util.UserVerificationChallenge.REQUIRED
@@ -1065,6 +1066,34 @@ class PushAuthenticatorTest : BaseTest() {
     }
 
     @Test
+    fun `resolve CIBA challenge jws with user verification NONE and uv enabled, expect CibaUserConsent returned`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true, enableCiba = true)).getOrThrow() }
+        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.NONE, transactionType = TransactionType.CIBA)
+
+        // act
+        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+
+        // assert
+        assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
+    }
+
+    @Test
+    fun `resolve CIBA challenge jws with user verification NONE and uv disable, expect CibaUserConsent returned`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = false, enableCiba = true)).getOrThrow() }
+        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.NONE, transactionType = TransactionType.CIBA)
+
+        // act
+        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+
+        // assert
+        assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
+    }
+
+    @Test
     fun `resolve challenge jws with user verification PREFERRED and uv enabled, expect UserVerification returned`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
@@ -1097,6 +1126,20 @@ class PushAuthenticatorTest : BaseTest() {
 
         // assert
         assertThat(remediation, instanceOf(UserConsent::class.java))
+    }
+
+    @Test
+    fun `resolve CIBA challenge jws with user verification PREFERRED and uv disabled, expect CibaUserConsent returned`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = false, enableCiba = true)).getOrThrow() }
+        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.PREFERRED, transactionType = TransactionType.CIBA)
+
+        // act
+        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+
+        // assert
+        assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
     }
 
     @Test
@@ -1154,6 +1197,21 @@ class PushAuthenticatorTest : BaseTest() {
         // assert
         assertThat(remediation, instanceOf(UserVerificationError::class.java))
         assertThat((remediation as UserVerificationError).securityError.cause, instanceOf(UnrecoverableKeyException::class.java))
+    }
+
+    @Test
+    fun `resolve CIBA challenge with enrollment not support CIBA, expect throw unsupported transaction type`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true, enableCiba = false)).getOrThrow() }
+        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.NONE, transactionType = TransactionType.CIBA)
+
+        // act
+        val remediationResult = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve() }
+
+        // assert
+        assertThat(remediationResult.isFailure, `is`(true))
+        assertThat(remediationResult.exceptionOrNull(), instanceOf(DeviceAuthenticatorError.SecurityError.UnsupportedTransactionType::class.java))
     }
 
     @Test
@@ -1237,7 +1295,8 @@ class PushAuthenticatorTest : BaseTest() {
         transactionTime: String = Date(System.currentTimeMillis()).toString(),
         userVerificationChallenge: UserVerificationChallenge = UserVerificationChallenge.NONE,
         aud: String = oidcClientId,
-        methodType: MethodType = PUSH
+        methodType: MethodType = PUSH,
+        transactionType: TransactionType = TransactionType.LOGIN
     ): String {
         val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
         val enrollmentId = accountInfo.enrollmentInformation.enrollmentId
@@ -1246,7 +1305,7 @@ class PushAuthenticatorTest : BaseTest() {
             serverKey, serverKid, testServer.url, enrollmentId, method.methodId, transactionId = transactionId,
             keyTypes = listOf(keyType.serializedName), transactionTime = transactionTime,
             userMediation = UserMediationChallenge.REQUIRED, userVerification = userVerificationChallenge,
-            aud = aud, method = methodType
+            aud = aud, method = methodType, transactionType = transactionType
         )
     }
 }
