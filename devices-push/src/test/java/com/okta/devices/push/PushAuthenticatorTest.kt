@@ -1070,13 +1070,15 @@ class PushAuthenticatorTest : BaseTest() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true, enableCiba = true)).getOrThrow() }
-        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.NONE, transactionType = TransactionType.CIBA)
+        val testBindingMessage = uuid()
+        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.NONE, transactionType = TransactionType.CIBA, bindingMessage = testBindingMessage)
 
         // act
         val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
 
         // assert
         assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
+        assertThat((remediation as PushRemediation.CibaConsent).bindingMessage, `is`(testBindingMessage))
     }
 
     @Test
@@ -1084,13 +1086,15 @@ class PushAuthenticatorTest : BaseTest() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = false, enableCiba = true)).getOrThrow() }
-        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.NONE, transactionType = TransactionType.CIBA)
+        val testBindingMessage = uuid()
+        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.NONE, transactionType = TransactionType.CIBA, bindingMessage = testBindingMessage)
 
         // act
         val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
 
         // assert
         assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
+        assertThat((remediation as PushRemediation.CibaConsent).bindingMessage, `is`(testBindingMessage))
     }
 
     @Test
@@ -1133,13 +1137,15 @@ class PushAuthenticatorTest : BaseTest() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = false, enableCiba = true)).getOrThrow() }
-        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.PREFERRED, transactionType = TransactionType.CIBA)
+        val testBindingMessage = uuid()
+        val pushJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, userVerificationChallenge = UserVerificationChallenge.PREFERRED, transactionType = TransactionType.CIBA, bindingMessage = testBindingMessage)
 
         // act
         val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
 
         // assert
         assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
+        assertThat((remediation as PushRemediation.CibaConsent).bindingMessage, `is`(testBindingMessage))
     }
 
     @Test
@@ -1296,7 +1302,8 @@ class PushAuthenticatorTest : BaseTest() {
         userVerificationChallenge: UserVerificationChallenge = UserVerificationChallenge.NONE,
         aud: String = oidcClientId,
         methodType: MethodType = PUSH,
-        transactionType: TransactionType = TransactionType.LOGIN
+        transactionType: TransactionType = TransactionType.LOGIN,
+        bindingMessage: String = ""
     ): String {
         val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
         val enrollmentId = accountInfo.enrollmentInformation.enrollmentId
@@ -1305,7 +1312,7 @@ class PushAuthenticatorTest : BaseTest() {
             serverKey, serverKid, testServer.url, enrollmentId, method.methodId, transactionId = transactionId,
             keyTypes = listOf(keyType.serializedName), transactionTime = transactionTime,
             userMediation = UserMediationChallenge.REQUIRED, userVerification = userVerificationChallenge,
-            aud = aud, method = methodType, transactionType = transactionType
+            aud = aud, method = methodType, transactionType = transactionType, bindingMessage = bindingMessage
         )
     }
 }
