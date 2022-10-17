@@ -31,6 +31,7 @@ class RemediationHandler(private val userInteraction: UserInteraction) {
         val result = when (remediate) {
             is PushRemediation.Completed -> Result.success(remediate)
             is PushRemediation.UserConsent -> if (userInteraction.confirm(remediate.challenge)) remediate.accept() else remediate.deny()
+            is PushRemediation.CibaConsent -> if (userInteraction.confirm(remediate.challenge)) remediate.accept() else remediate.deny()
             is PushRemediation.UserVerification -> userInteraction.userVerification(remediate.challenge)?.run { remediate.resolve(this) } ?: remediate.deny()
             is PushRemediation.UserVerificationError -> if (userInteraction.fixUserVerificationError(remediate.securityError)) remediate.resolve() else remediate.deny()
         }

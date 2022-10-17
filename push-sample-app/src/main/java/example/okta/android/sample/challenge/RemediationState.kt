@@ -19,6 +19,7 @@ import com.okta.devices.push.PushRemediation
 sealed interface RemediationState {
     class CompletedState(val completed: PushRemediation.Completed) : RemediationState
     class UserConsentState(val userConsent: PushRemediation.UserConsent) : RemediationState
+    class CibaConsentState(val cibaConsent: PushRemediation.CibaConsent) : RemediationState
     class UserVerificationState(val userVerification: PushRemediation.UserVerification) : RemediationState
     class UserVerificationErrorState(val userVerificationError: PushRemediation.UserVerificationError) : RemediationState
 }

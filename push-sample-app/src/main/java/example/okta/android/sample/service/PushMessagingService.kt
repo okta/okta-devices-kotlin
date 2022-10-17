@@ -105,6 +105,7 @@ class PushMessagingService(
         val notificationId = Random().nextInt() and Integer.MAX_VALUE
         when (val remediate = pushChallenge.resolve().getOrThrow()) {
             is PushRemediation.Completed -> Unit // do nothing
+            is PushRemediation.CibaConsent -> cibaConsent(remediate, notificationId, challengeJws)
             is PushRemediation.UserConsent -> userConsent(remediate, notificationId, challengeJws)
             is PushRemediation.UserVerification, is PushRemediation.UserVerificationError -> userVerification(remediate, notificationId, challengeJws)
         }
@@ -134,6 +135,21 @@ class PushMessagingService(
             .addAction(NotificationCompat.Action.Builder(R.drawable.notification_action_accept, getString(R.string.accept_text), pendingChallengeIntent(notificationId, jws, ACCEPTED)).build())
             .addAction(NotificationCompat.Action.Builder(R.drawable.notification_action_deny, getString(R.string.deny_text), pendingChallengeIntent(notificationId, jws, DENIED)).build())
             .setTimeoutAfter(userConsent.challenge.expiration - System.currentTimeMillis())
+
+        NotificationManagerCompat.from(this).notify(notificationId, notificationBuilder.build())
+    }
+
+    private fun cibaConsent(cibaConsent: PushRemediation.CibaConsent, notificationId: Int, jws: String) {
+        val appName = cibaConsent.challenge.appInstanceName.takeIf { it.isNotBlank() }
+            ?: cibaConsent.challenge.originUrl
+
+        notificationBuilder
+            .clearActions()
+            .setContentTitle(cibaConsent.bindingMessage)
+            .setContentIntent(pendingChallengeIntent(notificationId, jws, NONE))
+            .addAction(NotificationCompat.Action.Builder(R.drawable.notification_action_accept, getString(R.string.accept_text), pendingChallengeIntent(notificationId, jws, ACCEPTED)).build())
+            .addAction(NotificationCompat.Action.Builder(R.drawable.notification_action_deny, getString(R.string.deny_text), pendingChallengeIntent(notificationId, jws, DENIED)).build())
+            .setTimeoutAfter(cibaConsent.challenge.expiration - System.currentTimeMillis())
 
         NotificationManagerCompat.from(this).notify(notificationId, notificationBuilder.build())
     }

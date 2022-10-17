@@ -60,7 +60,7 @@ class OktaOidcClient(app: Application) {
                     jwtParser.parse(this).let { jwt ->
                         val credential = jwt.subject?.run { getCredential(this) } ?: credentialDataSource.createCredential()
                         credential.storeToken(result.result)
-                        Result.success(UserStatus(checkNotNull(jwt.subject), checkNotNull(jwt.name), pushEnabled = false, userVerification = false))
+                        Result.success(UserStatus(checkNotNull(jwt.subject), checkNotNull(jwt.name), pushEnabled = false, userVerification = false, cibaEnable = false))
                     }
                 }.getOrElse { Result.failure(it) }
             } ?: Result.failure(OidcError.InvalidState)
@@ -72,7 +72,7 @@ class OktaOidcClient(app: Application) {
 
     suspend fun getSignedInUser(): Result<UserStatus> = runCatching {
         val jwt = jwtParser.parse(checkNotNull(credentialDataSource.listCredentials().first().token?.idToken))
-        Result.success(UserStatus(checkNotNull(jwt.subject), checkNotNull(jwt.name), pushEnabled = false, userVerification = false))
+        Result.success(UserStatus(checkNotNull(jwt.subject), checkNotNull(jwt.name), pushEnabled = false, userVerification = false, cibaEnable = false))
     }.getOrElse { Result.failure(it) }
 
     suspend fun authToken(userId: String): Result<AuthToken.Bearer> = runCatching {

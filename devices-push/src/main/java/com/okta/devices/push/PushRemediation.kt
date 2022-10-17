@@ -57,7 +57,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
     /**
      * Remediation step requires a user interaction to accept or deny the challenge, used for LOGIN transaction type
      */
-    open class UserConsent internal constructor(challenge: PushChallenge, context: ChallengeContext) : PushRemediation(challenge, context) {
+    class UserConsent internal constructor(challenge: PushChallenge, context: ChallengeContext) : PushRemediation(challenge, context) {
         /**
          * Sign the push MFA challenge and respond to the server that the challenge is accepted.
          *
@@ -76,13 +76,27 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
     /**
      * Remediation step requires a user interaction to accept or deny the challenge, used for CIBA transaction type
      */
-    class CibaConsent internal constructor(challenge: PushChallenge, context: ChallengeContext) : UserConsent(challenge, context) {
+    class CibaConsent internal constructor(challenge: PushChallenge, context: ChallengeContext) : PushRemediation(challenge, context) {
         /**
          * A binding message is an identifier that help user to ensure that the action taken during remediation is related to the request initiated by the consumption devices.
          * You can use any human-readable random value (e.g. a transactional approval code) for this message
          * Display this message on both the consumption device and authentication device for user to do a visual inspection before confirm any authentication attempt
          */
         val bindingMessage: String = context.challengeInformation.bindingMessage
+
+        /**
+         * Sign the push MFA challenge and respond to the server that the challenge is accepted.
+         *
+         * @param exp Set the expiration time in minutes of the signed jwt. The default is 5 minutes
+         * @return [Result] If successful a completed [Remediation].
+         */
+        suspend fun accept(exp: Long = 5L): Result<PushRemediation> {
+            val acceptedCtx = if (ctx.consentResponse != APPROVED_USER_VERIFICATION) ctx.copy(consentResponse = APPROVED_CONSENT_PROMPT) else ctx
+            return acceptedCtx.verify(exp).fold(
+                { Result.success(Completed(challenge, acceptedCtx, it)) },
+                { Result.failure(it) }
+            )
+        }
     }
 
     /**
