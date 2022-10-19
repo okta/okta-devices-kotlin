@@ -312,7 +312,7 @@ Based on the diagram from [Remediation steps](#Remediation steps), the next poss
 
 #### CibaConsent
 
-Similar to UserConsent,use to handle CIBA request display the binding message and request the user to either accept or deny:
+Similar to UserConsent, use to handle CIBA request display the binding message and request the user to either accept or deny:
 
 ```kotlin
 private suspend fun handleCibaConsent(cibaConsent: CibaConsent) = runCatching {

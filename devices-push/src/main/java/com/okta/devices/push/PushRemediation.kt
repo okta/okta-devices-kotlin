@@ -85,7 +85,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
         val bindingMessage: String = context.challengeInformation.bindingMessage
 
         /**
-         * Sign the push MFA challenge and respond to the server that the challenge is accepted.
+         * Sign the push CIBA request and respond to the server that the request is accepted.
          *
          * @param exp Set the expiration time in minutes of the signed jwt. The default is 5 minutes
          * @return [Result] If successful a completed [Remediation].
