@@ -153,6 +153,7 @@ fun HomeScreen(
     enablePushAction: () -> Unit = {},
     updateUvAction: (enableUV: Boolean) -> Unit = {},
     disablePushAction: () -> Unit = {},
+    updateCibaAction: (enableCiba: Boolean) -> Unit = {},
     signOutAction: () -> Unit = {},
     refreshAction: () -> Unit = {}
 ) {
@@ -191,6 +192,18 @@ fun HomeScreen(
                     onCheckedChange = { updateUvAction(it) }
                 )
             }
+
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(fontSize = 14.sp, text = stringResource(id = R.string.enable_ciba))
+                Checkbox(
+                    checked = userStatus.cibaEnable,
+                    onCheckedChange = { updateCibaAction(it) }
+                )
+            }
             CommonButton(onClick = signOutAction, text = stringResource(id = R.string.sign_out))
             CommonButton(onClick = refreshAction, text = stringResource(id = R.string.check_pending_notification))
 
@@ -219,6 +232,26 @@ fun AcceptPushScreen(userConsent: PushRemediation.UserConsent? = null, primaryAc
         ${userConsent?.challenge?.clientOs ?: "ClientOS"}
         ${userConsent?.challenge?.originUrl ?: "OriginUrl"}
         ${userConsent?.challenge?.transactionTime ?: "TransactionTime"}
+        """.trimIndent(),
+        primaryText = stringResource(id = R.string.accept_text),
+        primaryAction = primaryAction,
+        secondaryText = stringResource(id = R.string.deny_text),
+        secondaryAction = secondaryAction
+    )
+}
+
+@Composable
+@Preview
+fun AcceptCibaPushScreen(cibaConsent: PushRemediation.CibaConsent? = null, primaryAction: () -> Unit = {}, secondaryAction: () -> Unit = {}) {
+    CommonDialog(
+        title = cibaConsent?.bindingMessage ?: "BindingMessage",
+        summary =
+        """
+        ${cibaConsent?.challenge?.appInstanceName ?: "AppName"}
+        ${cibaConsent?.challenge?.clientLocation ?: "ClientLocation"}
+        ${cibaConsent?.challenge?.clientOs ?: "ClientOS"}
+        ${cibaConsent?.challenge?.originUrl ?: "OriginUrl"}
+        ${cibaConsent?.challenge?.transactionTime ?: "TransactionTime"}
         """.trimIndent(),
         primaryText = stringResource(id = R.string.accept_text),
         primaryAction = primaryAction,

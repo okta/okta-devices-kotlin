@@ -75,7 +75,7 @@ class MainViewModel(
             oidcClient.getSignedInUser().onSuccess { userStatus ->
                 authenticatorClient.getEnrollment(userStatus.userId)
                     .onSuccess { enrollment ->
-                        uiStateFlow.update { State.StatusUpdate(userStatus.copy(pushEnabled = true, userVerification = enrollment.userVerificationEnabled())) }
+                        uiStateFlow.update { State.StatusUpdate(userStatus.copy(pushEnabled = true, userVerification = enrollment.userVerificationEnabled(), cibaEnable = enrollment.cibaEnabled())) }
                         if (checkPending) {
                             authenticatorClient.retrievePendingChallenges()
                                 .onSuccess {
@@ -128,8 +128,23 @@ class MainViewModel(
         }.getOrElse { onError(it) }
     }
 
+    fun updateCibaTransaction(userStatus: UserStatus, enableCiba: Boolean) = viewModelScope.launch(dispatcher) {
+        uiStateFlow.update { State.Loading }
+        runCatching {
+            authenticatorClient.updateCibaTransaction(enableCiba, userStatus.userId)
+                .onSuccess { uiStateFlow.update { State.StatusUpdate(userStatus.copy(cibaEnable = enableCiba)) } }
+                .onFailure { onError(it) }
+        }.getOrElse { onError(it) }
+    }
+
     fun acceptOrDeny(accept: Boolean, userConsent: PushRemediation.UserConsent) = viewModelScope.launch(dispatcher) {
         userConsent.handleAcceptOrDeny(accept)
+            .onSuccess { remediationState -> uiStateFlow.update { State.RemediationStatus(remediationState) } }
+            .onFailure { onError(it) }
+    }
+
+    fun acceptOrDeny(accept: Boolean, cibaConsent: PushRemediation.CibaConsent) = viewModelScope.launch(dispatcher) {
+        cibaConsent.handleAcceptOrDeny(accept)
             .onSuccess { remediationState -> uiStateFlow.update { State.RemediationStatus(remediationState) } }
             .onFailure { onError(it) }
     }

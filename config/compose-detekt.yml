@@ -40,3 +40,9 @@ complexity:
     active : true
     threshold : 120
     ignoreAnnotated : [ 'ParameterizedRobolectricTestRunner.Parameters' ]
+  ComplexMethod :
+    active : true
+    threshold: 20
+  TooManyFunctions :
+    active : true
+    thresholdInClasses: 15

@@ -63,6 +63,15 @@ fun HandleIncomingChallenge(incomingChallenge: IncomingChallenge, viewModel: Cha
                     )
                 } else viewModel.acceptOrDeny(response == UserResponse.ACCEPTED, remediationState.userConsent)
             }
+            is RemediationState.CibaConsentState -> {
+                if (response == UserResponse.NONE) {
+                    AcceptCibaPushScreen(
+                        remediationState.cibaConsent,
+                        { viewModel.acceptOrDeny(true, remediationState.cibaConsent) },
+                        { viewModel.acceptOrDeny(false, remediationState.cibaConsent) }
+                    )
+                } else viewModel.acceptOrDeny(response == UserResponse.ACCEPTED, remediationState.cibaConsent)
+            }
             is RemediationState.UserVerificationState -> LaunchedEffect(remediationState) {
                 runCatching {
                     val result = activity.handleBiometric(remediationState.userVerification.signature)

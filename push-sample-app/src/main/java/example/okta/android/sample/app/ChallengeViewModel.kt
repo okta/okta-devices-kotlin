@@ -101,6 +101,12 @@ class ChallengeViewModel(
             .onFailure { onError(it) }
     }
 
+    fun acceptOrDeny(accept: Boolean, cibaConsent: PushRemediation.CibaConsent) = viewModelScope.launch(dispatcher) {
+        cibaConsent.handleAcceptOrDeny(accept)
+            .onSuccess { challengeState -> uiStateFlow.update { State.IncomingChallenge(challengeState, response) } }
+            .onFailure { onError(it) }
+    }
+
     fun userVerification(
         userVerification: PushRemediation.UserVerification,
         result: BiometricPrompt.AuthenticationResult?,

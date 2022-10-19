@@ -16,6 +16,7 @@ package example.okta.android.sample.challenge
 
 import androidx.biometric.BiometricPrompt
 import com.okta.devices.push.PushRemediation
+import com.okta.devices.push.PushRemediation.CibaConsent
 import com.okta.devices.push.PushRemediation.UserConsent
 import com.okta.devices.push.PushRemediation.UserVerification
 import example.okta.android.sample.errors.BiometricError
@@ -31,11 +32,17 @@ import kotlinx.coroutines.withContext
 fun PushRemediation.remediationAsState(): RemediationState = when (this) {
     is PushRemediation.Completed -> RemediationState.CompletedState(this)
     is UserConsent -> RemediationState.UserConsentState(this)
+    is PushRemediation.CibaConsent -> RemediationState.CibaConsentState(this)
     is UserVerification -> RemediationState.UserVerificationState(this)
     is PushRemediation.UserVerificationError -> RemediationState.UserVerificationErrorState(this)
 }
 
 suspend fun UserConsent.handleAcceptOrDeny(accept: Boolean): Result<RemediationState> {
+    val result = if (accept) accept() else deny()
+    return result.fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+}
+
+suspend fun CibaConsent.handleAcceptOrDeny(accept: Boolean): Result<RemediationState> {
     val result = if (accept) accept() else deny()
     return result.fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
 }

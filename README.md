@@ -107,7 +107,7 @@ the following:
 
 ```kotlin
 val authConfig = DeviceAuthenticatorConfig(URL(orgUrl), "oidcClientId")
-val result = authenticator.enroll(AuthToken.Bearer("accessToken"), authConfig, EnrollmentParameters.Push(FcmToken("registrationToken"), enableUserVerification = false))
+val result = authenticator.enroll(AuthToken.Bearer("accessToken"), authConfig, EnrollmentParameters.Push(FcmToken("registrationToken"), enableUserVerification = false, enableCiba = false))
 if (result.isSuccess) {
     val pushEnrollment: PushEnrollment = result.getOrThrow()
 }
@@ -147,6 +147,21 @@ val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThro
 // Find the enrollment associated with the current user
 enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
     pushEnrollment.setUserVerification(AuthToken.Bearer("accessToken"), true)
+        .onSuccess { println("success") }
+        .onFailure { println("failure") }
+}
+```
+
+#### Update CIBA setting
+
+Enable CIBA setting will allow the device to verify CIBA request. You can enable or disable CIBA by doing the following:
+
+```kotlin
+val enrollments: List<PushEnrollment> = authenticator.allEnrollments().getOrThrow()
+
+// Find the enrollment associated with the current user
+enrollments.find { it.user().name == "myUser" }?.let { pushEnrollment ->
+    pushEnrollment.enableCibaTransaction(AuthToken.Bearer("accessToken"), true)
         .onSuccess { println("success") }
         .onFailure { println("failure") }
 }
@@ -224,6 +239,7 @@ authenticator.parseChallenge(fcmRemoteMessage)
 
 private suspend fun remediate(remediation: PushRemediation) = runCatching {
     when (remediation) {
+        is CibaConsent -> handleCibaConsent(remediation) //See section on CibaConsent
         is UserConsent -> handleUserConsent(remediation) // See section on UserConsent
         is UserVerification -> handleUserVerification(remediation) // See section on UserVerification
         is UserVerificationError -> handleUserVerificationError(remediation) // See section on UserVerificationError
@@ -241,21 +257,25 @@ private fun onError(throwable: Throwable) {
 ```mermaid
 graph TD
     PushRemediation --> UserConsent
+    PushRemediation --> CibaConsent
     PushRemediation --> UserVerification
     PushRemediation --> UserVerificationError
     PushRemediation --> Completed
+    CibaConsent --> |User approve or deny?|UserConsentAction{approve/deny}
     UserConsent --> |User approve or deny?|UserConsentAction{approve/deny}
     UserConsentAction --> |User approved| Completed
     UserConsentAction --> |User denied| Completed
     UserVerification --> |Resolved biometric or cancel?|UserVerificationAction{Resolve/Cancel}
     UserVerificationAction --> |Resolve| Resolve
     UserVerificationAction --> |Cancel| UserConsent
+    UserVerificationAction --> |Cancel| CibaConsent
     Resolve --> Completed
     Resolve --> UserVerificationError
     UserVerificationError --> ResolveError[Resolve]
     ResolveError --> |Corrected error|UserVerification
     ResolveError --> |Unable to correct. Ask user consent instead?|ConsentOnFailure{True/False}
     ConsentOnFailure --> |True|UserConsent
+    ConsentOnFailure --> |True|CibaConsent
     ConsentOnFailure --> |False|Completed
 ```
 
@@ -264,7 +284,7 @@ to reject the challenge, except the completed step.
 
 #### UserConsent
 
-Display the challenge information and request the user to either accept or deny:
+Use to handle login request, display the challenge information and request the user to either accept or deny:
 
 ```kotlin
 private suspend fun handleUserConsent(userConsent: UserConsent) = runCatching {
@@ -283,6 +303,35 @@ private suspend fun handleUserConsent(userConsent: UserConsent) = runCatching {
         .onFailure { onError(it) }
     // if user denied the challenge
     userConsent.deny()
+        .onSuccess { remediate(it) }
+        .onFailure { onError(it) }
+}.getOrElse { onError(it) }
+```
+
+Based on the diagram from [Remediation steps](#Remediation steps), the next possible step is [Completed](#Completed). See [PushMessagingService] for a complete example.
+
+#### CibaConsent
+
+Similar to UserConsent, use to handle CIBA request display the binding message and request the user to either accept or deny:
+
+```kotlin
+private suspend fun handleCibaConsent(cibaConsent: CibaConsent) = runCatching {
+    // Show the following information in a UX dialog and ask the user to accept or deny.
+    // Binding message: ${cibaConsent?.bindingMessage}")
+    // Application name: ${userConsent?.challenge?.appInstanceName}")
+    // Location of sign in attempt: {userConsent?.challenge?.clientLocation}")
+    // OS used to sign in: ${userConsent?.challenge?.clientOs}")
+    // URL that initiated the sign in: ${userConsent?.challenge?.originUrl}
+    // Time of sign in attempt: ${userConsent?.challenge?.transactionTime}
+
+    // Call either cibaConsent.accept() or cibaConsent.deny() depending on user interaction
+
+    // if user accept the challenge
+    cibaConsent.accept()
+        .onSuccess { remediate(it) }
+        .onFailure { onError(it) }
+    // if user denied the challenge
+    cibaConsent.deny()
         .onSuccess { remediate(it) }
         .onFailure { onError(it) }
 }.getOrElse { onError(it) }

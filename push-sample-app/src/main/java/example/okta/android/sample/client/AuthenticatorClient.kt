@@ -122,6 +122,13 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
         } ?: Result.failure(AuthenticatorError.NoEnrollment)
     }.getOrElse { Result.failure(it) }
 
+    suspend fun updateCibaTransaction(enableCiba: Boolean, userId: String): Result<Int> = runCatching {
+        getEnrollment(userId).getOrNull()?.run {
+            val authToken = oidcClient.authToken(userId).getOrThrow()
+            enableCibaTransaction(authToken, enableCiba)
+        } ?: Result.failure(AuthenticatorError.NoEnrollment)
+    }.getOrElse { Result.failure(it) }
+
     suspend fun retrievePendingChallenges(): Result<List<PushChallenge>> = runCatching {
         pushAuthenticator.allEnrollments().getOrThrow().firstOrNull()?.let {
             val authToken = oidcClient.authToken(it.user().id).getOrThrow()

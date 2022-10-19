@@ -43,6 +43,7 @@ fun MainComposable(viewModel: MainViewModel) {
                 { viewModel.enablePush(userStatus, false) },
                 { enableUv -> viewModel.updateUserVerification(userStatus, enableUv) },
                 { viewModel.disablePush(userStatus) },
+                updateCibaAction = { enableCiba -> viewModel.updateCibaTransaction(userStatus, enableCiba) },
                 { viewModel.signOut(userStatus.userId) },
                 { viewModel.refresh(true) }
             )
@@ -54,6 +55,12 @@ fun MainComposable(viewModel: MainViewModel) {
                             remediationState.userConsent,
                             { viewModel.acceptOrDeny(true, remediationState.userConsent) },
                             { viewModel.acceptOrDeny(false, remediationState.userConsent) }
+                        )
+                    is RemediationState.CibaConsentState ->
+                        AcceptCibaPushScreen(
+                            remediationState.cibaConsent,
+                            { viewModel.acceptOrDeny(true, remediationState.cibaConsent) },
+                            { viewModel.acceptOrDeny(false, remediationState.cibaConsent) }
                         )
                     is RemediationState.UserVerificationErrorState -> ErrorState(stringResource(R.string.unknown_error), remediationState.userVerificationError.securityError.cause) {
                         viewModel.refresh(false)
