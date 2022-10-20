@@ -33,7 +33,7 @@ import com.okta.devices.encrypt.AESEncryptionProvider
 import com.okta.devices.encrypt.CryptoFactory
 import com.okta.devices.encrypt.DeviceKeyStoreImpl
 import com.okta.devices.encrypt.RsaSignature
-import com.okta.devices.http.DefaultHttpClient
+import com.okta.devices.http.DeviceOkHttpClient
 import com.okta.devices.http.UserAgent
 import com.okta.devices.push.api.PushAuthenticator
 import com.okta.devices.storage.AuthenticatorDatabase
@@ -54,13 +54,14 @@ import kotlinx.coroutines.Job
 class PushAuthenticatorBuilder internal constructor(context: Application) {
     internal var deviceStore: DeviceStore? = null
     internal var deviceClock: DeviceClock = DeviceClock { System.currentTimeMillis() }
-    internal var httpClient: DeviceHttpClient = DefaultHttpClient(UserAgent(context, BuildConfig.VERSION_NAME))
+    internal var httpClient: DeviceHttpClient = DeviceOkHttpClient(UserAgent(context, BuildConfig.VERSION_NAME))
     internal var coroutineScope: CoroutineScope = CoroutineScope(Job() + Dispatchers.IO)
     internal var deviceInfoCollector: DeviceInfoCollector = DeviceInfoCollectorImpl(context)
 
     private val deviceKeyStore = lazy { DeviceKeyStoreImpl() }
     internal var signer: SignatureProvider = RsaSignature(deviceKeyStore.value)
     internal var encryptionProvider: EncryptionProvider = AESEncryptionProvider(deviceKeyStore.value)
+    internal var useMyAccount = false
 
     /**
      * Sets the logging interface for the push authenticator
@@ -85,7 +86,7 @@ class PushAuthenticatorBuilder internal constructor(context: Application) {
             val builder = PushAuthenticatorBuilder(appConfig.context)
             buildAction?.invoke(builder)
             val modules = builder.build(appConfig.context)
-            Result.success(PushAuthenticatorImpl(DeviceAuthenticatorCore(appConfig, modules)))
+            Result.success(PushAuthenticatorImpl(DeviceAuthenticatorCore(appConfig, modules), builder.useMyAccount))
         }.getOrElse { Result.failure(it) }
     }
 

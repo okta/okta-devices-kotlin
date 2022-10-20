@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
 fun PushRemediation.remediationAsState(): RemediationState = when (this) {
     is PushRemediation.Completed -> RemediationState.CompletedState(this)
     is UserConsent -> RemediationState.UserConsentState(this)
-    is PushRemediation.CibaConsent -> RemediationState.CibaConsentState(this)
+    is CibaConsent -> RemediationState.CibaConsentState(this)
     is UserVerification -> RemediationState.UserVerificationState(this)
     is PushRemediation.UserVerificationError -> RemediationState.UserVerificationErrorState(this)
 }
