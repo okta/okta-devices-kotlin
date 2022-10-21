@@ -24,7 +24,7 @@
 
     <string name="default_notification_channel_id">MagentaBankChannel</string>
     <string name="push_notification_channel_name">Push notifications</string>
-    <string name="verify_sign_in_title">Verify your sign in</string>
+    <string name="verify_sign_in_title">Verify your identity</string>
     <string name="verify_sign_in_body">Tap to verify your identify to %s</string>
     <string name="push_notification_title">Are you signing in?\n%s\n%s</string>
     <string name="dialog_sign_in_title">Are you signing in?</string>
