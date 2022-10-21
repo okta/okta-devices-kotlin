@@ -115,7 +115,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
         fun resolve(consentOnFailure: Boolean = true): Result<PushRemediation> = runCatching {
             Result.success(UserVerification(challenge, ctx, ctx.baseEnrollment.userVerificationSignature()))
         }.getOrElse {
-            if (consentOnFailure) Result.success(if (ctx.cibaEnabled)CibaConsent(challenge, ctx) else UserConsent(challenge, ctx)) else Result.failure(it)
+            if (consentOnFailure) Result.success(if (ctx.cibaEnabled) CibaConsent(challenge, ctx) else UserConsent(challenge, ctx)) else Result.failure(it)
         }
     }
 
@@ -133,7 +133,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          */
         fun resolve(authResult: AuthenticationResult): Result<PushRemediation> {
             val authedCtx = ctx.copy(authResult = authResult, consentResponse = APPROVED_USER_VERIFICATION)
-            return Result.success(if (ctx.cibaEnabled)CibaConsent(challenge, authedCtx) else UserConsent(challenge, authedCtx))
+            return Result.success(if (ctx.cibaEnabled) CibaConsent(challenge, authedCtx) else UserConsent(challenge, authedCtx))
         }
 
         /**
@@ -143,7 +143,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          */
         fun cancel(): Result<PushRemediation> {
             val authedCtx = ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
-            return Result.success(if (ctx.cibaEnabled)CibaConsent(challenge, authedCtx) else UserConsent(challenge, authedCtx))
+            return Result.success(if (ctx.cibaEnabled) CibaConsent(challenge, authedCtx) else UserConsent(challenge, authedCtx))
         }
 
         /**
@@ -154,7 +154,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
         fun temporarilyUnavailable(): Result<PushRemediation> {
             val authedCtx = if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) ctx.copy(consentResponse = UV_TEMPORARILY_UNAVAILABLE)
             else ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
-            return Result.success(if (ctx.cibaEnabled)CibaConsent(challenge, authedCtx) else UserConsent(challenge, authedCtx))
+            return Result.success(if (ctx.cibaEnabled) CibaConsent(challenge, authedCtx) else UserConsent(challenge, authedCtx))
         }
 
         /**
@@ -165,7 +165,7 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
         fun permanentlyUnavailable(): Result<PushRemediation> {
             val authedCtx = if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) ctx.copy(consentResponse = UV_PERMANENTLY_UNAVAILABLE)
             else ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
-            return Result.success(if (ctx.cibaEnabled)CibaConsent(challenge, authedCtx) else UserConsent(challenge, authedCtx))
+            return Result.success(if (ctx.cibaEnabled) CibaConsent(challenge, authedCtx) else UserConsent(challenge, authedCtx))
         }
 
         /**

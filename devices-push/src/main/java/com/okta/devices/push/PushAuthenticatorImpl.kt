@@ -31,7 +31,10 @@ import com.okta.devices.push.api.PushChallenge
 import com.okta.devices.push.api.PushEnrollment
 import com.okta.devices.util.baseUrl
 
-internal class PushAuthenticatorImpl(private val core: DeviceAuthenticatorCore) : PushAuthenticator, DeviceAuthenticator by DeviceAuthenticatorImpl(core) {
+internal class PushAuthenticatorImpl(
+    private val core: DeviceAuthenticatorCore,
+    private val myAccount: Boolean = false
+) : PushAuthenticator, DeviceAuthenticator by DeviceAuthenticatorImpl(core, myAccount) {
 
     override suspend fun parseChallenge(challenge: String, allowedClockSkewInSeconds: Long): Result<PushChallenge> = runCatching {
         val challengeInfo = core.parseJws(challenge, allowedClockSkewInSeconds).getOrElse { return Result.failure(it) }
@@ -54,14 +57,17 @@ internal class PushAuthenticatorImpl(private val core: DeviceAuthenticatorCore) 
             userVerificationEnabled = params.enableUserVerification,
             cibaEnabled = params.enableCiba
         )
-        return core.enroll(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
-            { Result.success(PushEnrollmentImpl(it)) },
+        return if (myAccount) core.enrollMyAccount(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
+            { Result.success(PushEnrollmentImpl(it, myAccount)) },
+            { Result.failure(it) }
+        ) else core.enroll(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
+            { Result.success(PushEnrollmentImpl(it, myAccount)) },
             { Result.failure(it) }
         )
     }
 
     override suspend fun allEnrollments(): Result<List<PushEnrollment>> = core.getAllEnrollments().fold(
-        { Result.success(it.map { core -> PushEnrollmentImpl(core) }) },
+        { Result.success(it.map { core -> PushEnrollmentImpl(core, myAccount) }) },
         { Result.failure(it) }
     )
 }

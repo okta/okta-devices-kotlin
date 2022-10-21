@@ -49,8 +49,8 @@ import timber.log.Timber
 import java.util.Random
 
 class PushMessagingService(
-    private val dispatcher1: CoroutineDispatcher = Dispatchers.IO,
-    private val dispatcher2: CoroutineDispatcher = Dispatchers.Unconfined
+    dispatcher1: CoroutineDispatcher = Dispatchers.IO,
+    dispatcher2: CoroutineDispatcher = Dispatchers.Unconfined
 ) : FirebaseMessagingService() {
     private val scope = CoroutineScope(Job() + dispatcher1)
     private val notificationBuilder by lazy {
@@ -127,30 +127,22 @@ class PushMessagingService(
     private fun userConsent(userConsent: PushRemediation.UserConsent, notificationId: Int, jws: String) {
         val appName = userConsent.challenge.appInstanceName.takeIf { it.isNotBlank() }
             ?: userConsent.challenge.originUrl
-
-        notificationBuilder
-            .clearActions()
-            .setContentTitle(getString(R.string.push_notification_title, appName, userConsent.challenge.clientLocation))
-            .setContentIntent(pendingChallengeIntent(notificationId, jws, NONE))
-            .addAction(NotificationCompat.Action.Builder(R.drawable.notification_action_accept, getString(R.string.accept_text), pendingChallengeIntent(notificationId, jws, ACCEPTED)).build())
-            .addAction(NotificationCompat.Action.Builder(R.drawable.notification_action_deny, getString(R.string.deny_text), pendingChallengeIntent(notificationId, jws, DENIED)).build())
-            .setTimeoutAfter(userConsent.challenge.expiration - System.currentTimeMillis())
-
-        NotificationManagerCompat.from(this).notify(notificationId, notificationBuilder.build())
+        val message = getString(R.string.push_notification_title, appName, userConsent.challenge.clientLocation)
+        notify(userConsent.challenge.expiration, message, notificationId, jws)
     }
 
     private fun cibaConsent(cibaConsent: PushRemediation.CibaConsent, notificationId: Int, jws: String) {
-        val appName = cibaConsent.challenge.appInstanceName.takeIf { it.isNotBlank() }
-            ?: cibaConsent.challenge.originUrl
+        notify(cibaConsent.challenge.expiration, cibaConsent.bindingMessage, notificationId, jws)
+    }
 
+    private fun notify(expiration: Long, message: String, notificationId: Int, jws: String) {
         notificationBuilder
             .clearActions()
-            .setContentTitle(cibaConsent.bindingMessage)
+            .setContentTitle(message)
             .setContentIntent(pendingChallengeIntent(notificationId, jws, NONE))
             .addAction(NotificationCompat.Action.Builder(R.drawable.notification_action_accept, getString(R.string.accept_text), pendingChallengeIntent(notificationId, jws, ACCEPTED)).build())
             .addAction(NotificationCompat.Action.Builder(R.drawable.notification_action_deny, getString(R.string.deny_text), pendingChallengeIntent(notificationId, jws, DENIED)).build())
-            .setTimeoutAfter(cibaConsent.challenge.expiration - System.currentTimeMillis())
-
+            .setTimeoutAfter(expiration - System.currentTimeMillis())
         NotificationManagerCompat.from(this).notify(notificationId, notificationBuilder.build())
     }
 

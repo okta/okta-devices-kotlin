@@ -24,6 +24,8 @@ import com.okta.devices.push.PushRemediation.UserConsent
 import com.okta.devices.push.PushRemediation.UserVerification
 import com.okta.devices.push.PushRemediation.UserVerificationError
 import com.okta.devices.push.api.PushChallenge
+import com.okta.devices.util.TransactionType.CIBA
+import com.okta.devices.util.TransactionType.LOGIN
 import com.okta.devices.util.UserVerificationChallenge.PREFERRED
 import com.okta.devices.util.UserVerificationChallenge.REQUIRED
 import io.jsonwebtoken.security.SignatureException
@@ -54,22 +56,22 @@ internal class PushChallengeImpl(private val ctx: ChallengeContext, private val 
     override fun resolve(): Result<PushRemediation> = runCatching {
         val userVerification = info.userVerificationChallenge
         if (!validTime) return Result.failure(DeviceAuthenticatorError.SecurityError.InvalidToken(ErrorCode.INVALID_OR_EXPIRED_TOKEN.value, "Expired token, check device clock"))
-        if (ctx.challengeInformation.transactionType == com.okta.devices.util.TransactionType.CIBA && !ctx.baseEnrollment.cibaEnabled()) {
-            return Result.failure(DeviceAuthenticatorError.SecurityError.UnsupportedTransactionType(ErrorCode.UNSUPPORTED_TRANSACTION_TYPE.value, "Transaction type not supported"))
+        if (ctx.challengeInformation.transactionType == CIBA && !ctx.baseEnrollment.cibaEnabled()) {
+            return Result.failure(DeviceAuthenticatorError.UnsupportedTransactionType(ErrorCode.UNSUPPORTED_TRANSACTION_TYPE.value, "Transaction type not supported"))
         }
 
         val remediation = when {
             userVerification == REQUIRED && !ctx.uvEnabled -> UserVerificationError(this, ctx, UserVerificationRequired(USER_VERIFICATION_FAILED.value, ""))
             (userVerification == PREFERRED && ctx.uvEnabled) || userVerification == REQUIRED -> UserVerification(this, ctx, ctx.baseEnrollment.userVerificationSignature())
             else -> when (ctx.challengeInformation.transactionType) {
-                com.okta.devices.util.TransactionType.LOGIN -> UserConsent(this, ctx)
-                com.okta.devices.util.TransactionType.CIBA -> PushRemediation.CibaConsent(this, ctx)
+                LOGIN -> UserConsent(this, ctx)
+                CIBA -> PushRemediation.CibaConsent(this, ctx)
             }
         }
         Result.success(remediation)
     }.getOrElse {
         when (it) {
-            is SignatureException, is GeneralSecurityException, is KeyStoreException, is InvalidKeyException ->
+            is InvalidKeyException, is KeyStoreException, is SignatureException, is GeneralSecurityException ->
                 Result.success(UserVerificationError(this, ctx, SecurityException(USER_VERIFICATION_FAILED.value, "User verification failure", it)))
             else -> Result.failure(it)
         }

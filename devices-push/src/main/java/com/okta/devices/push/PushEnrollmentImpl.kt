@@ -25,11 +25,14 @@ import com.okta.devices.push.api.PushChallenge
 import com.okta.devices.push.api.PushEnrollment
 
 internal class PushEnrollmentImpl(
-    private val enrollmentCore: AuthenticatorEnrollmentCore
-) : PushEnrollment, AuthenticatorEnrollment by AuthenticatorEnrollmentImpl(enrollmentCore) {
+    private val enrollmentCore: AuthenticatorEnrollmentCore,
+    private val myAccount: Boolean = false
+) : PushEnrollment, AuthenticatorEnrollment by AuthenticatorEnrollmentImpl(enrollmentCore, myAccount) {
 
-    override suspend fun updateRegistrationToken(authToken: AuthToken, registrationToken: RegistrationToken): Result<String> =
-        enrollmentCore.updateRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
+    override suspend fun updateRegistrationToken(authToken: AuthToken, registrationToken: RegistrationToken): Result<String> {
+        return if (myAccount) enrollmentCore.patchRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
+        else enrollmentCore.updateRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
+    }
 
     override suspend fun retrievePushChallenges(authToken: AuthToken, allowedClockSkewInSeconds: Long): Result<List<PushChallenge>> =
         enrollmentCore.retrievePushChallenges(AuthorizationToken.Bearer(authToken.token), allowedClockSkewInSeconds).fold(
