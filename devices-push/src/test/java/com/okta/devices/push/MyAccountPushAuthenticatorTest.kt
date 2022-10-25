@@ -462,6 +462,30 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
     }
 
     @Test
+    fun `retrieve pending CIBA challenge expect list of challenges returned`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking {
+            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableCiba = true)).getOrThrow()
+        }
+        val transactionId = uuid()
+        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
+        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
+        val bindingMessage = uuid()
+        val pushJwsChallenge = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, transactionId, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage)
+
+        val parsedChallenge = runBlocking { authenticator.parseChallenge(pushJwsChallenge) }.getOrThrow() as PushChallengeImpl
+        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, oidcClientId, pushJwsChallenge)
+
+        // act
+        val challenges: List<PushChallenge> = runBlocking { enrollment.retrievePushChallenges(authToken).getOrThrow() }
+
+        // assert
+        assertThat(challenges.isNotEmpty(), `is`(true))
+        assertThat((challenges.first() as PushChallengeImpl).info, `is`(parsedChallenge.info))
+    }
+
+    @Test
     fun `retrieve pending challenges with expired challenge expect only valid challenge returned`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
@@ -678,6 +702,70 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
     }
 
     @Test
+    fun `call challenge resolve to accept CIBA push, expect successful complete status`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking {
+            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableCiba = true)).getOrThrow()
+        }
+        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
+        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
+        val transactionId = uuid()
+        val bindingMessage = uuid()
+        val pushChallengeJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, transactionId, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage)
+
+        // ux handling
+        val userInteraction = object : RemediationHandler.UserInteraction {
+            override fun confirm(challenge: Challenge): Boolean = true // accept
+            override fun userVerification(challenge: Challenge): AuthenticationResult? = null
+            override fun fixUserVerificationError(securityError: DeviceAuthenticatorError.SecurityError): Boolean = true
+        }
+        val handler = RemediationHandler(userInteraction)
+
+        // send ciba push
+        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+
+        // act
+        val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
+        val remediation = parseResult.resolve().getOrThrow()
+        assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
+        assertThat((remediation as PushRemediation.CibaConsent).bindingMessage, `is`(bindingMessage))
+        val completed: Completed = runBlocking { handler.handleRemediation(remediation).getOrThrow() as Completed }
+        // assert
+        assertThat(completed.state.userVerificationUsed, `is`(false))
+        assertThat(completed.state.accepted, `is`(true))
+        assertThat(completed.state.throwable, `is`(nullValue()))
+    }
+
+    @Test
+    fun `call challenge resolve to accept CIBA push with UV, expect successful complete status`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking {
+            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true, enableCiba = true)).getOrThrow()
+        }
+        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
+        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
+        val transactionId = uuid()
+        val bindingMessage = uuid()
+        val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage)
+
+        // send ciba push
+        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+
+        // act
+        val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
+        val remediation = parseResult.resolve().getOrThrow()
+        assertThat(remediation, instanceOf(UserVerification::class.java))
+        val authenticationResult = mockk<AuthenticationResult>()
+        val cibaConsent = (remediation as UserVerification).resolve(authenticationResult).getOrThrow()
+        assertThat(cibaConsent, instanceOf(PushRemediation.CibaConsent::class.java))
+        assertThat((cibaConsent as PushRemediation.CibaConsent).bindingMessage, `is`(bindingMessage))
+        val serverApiError = runBlocking { cibaConsent.accept().exceptionOrNull() }
+        assertThat(serverApiError, instanceOf(ServerApiError::class.java))
+    }
+
+    @Test
     fun `call challenge resolve to accept cancel UV then accept consent, expect successful complete status`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
@@ -699,6 +787,40 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
             is UserVerification -> {
                 val userConsent = remediation.cancel().getOrThrow() as UserConsent
                 val completed = runBlocking { userConsent.accept().getOrThrow() as Completed }
+
+                // assert
+                assertThat(completed.state.userVerificationUsed, `is`(false))
+                assertThat(completed.state.accepted, `is`(true))
+                assertThat(completed.state.throwable, `is`(nullValue()))
+            }
+            else -> Assert.fail("UserVerification remediation expected")
+        }
+    }
+
+    @Test
+    fun `call CIBA challenge resolve to accept cancel UV then accept consent, expect successful complete status`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking {
+            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true, enableCiba = true)).getOrThrow()
+        }
+        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
+        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
+        val transactionId = uuid()
+        val bindingMessage = uuid()
+        val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = PREFERRED, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage)
+
+        // sign in
+        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+
+        // act
+        val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
+
+        when (val remediation = parseResult.resolve().getOrThrow()) {
+            is UserVerification -> {
+                val cibaConsent = remediation.cancel().getOrThrow() as PushRemediation.CibaConsent
+                assertThat(cibaConsent.bindingMessage, `is`(bindingMessage))
+                val completed = runBlocking { cibaConsent.accept().getOrThrow() as Completed }
 
                 // assert
                 assertThat(completed.state.userVerificationUsed, `is`(false))
