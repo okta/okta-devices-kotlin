@@ -52,11 +52,10 @@ import com.okta.devices.fake.server.api.FakeApiEndpoint
 import com.okta.devices.fake.util.FakeData.testSerializer
 import com.okta.devices.fake.util.FakeHttpsConfiguration
 import com.okta.devices.fake.util.FakeKeyStore
+import com.okta.devices.fake.util.SslConfiguration
 import com.okta.devices.fake.util.toJson
 import com.okta.devices.fake.util.uuid
 import com.okta.devices.http.AUTHORIZATION
-import com.okta.devices.http.DefaultHttpClient
-import com.okta.devices.http.UserAgent
 import com.okta.devices.model.AuthorizationType
 import com.okta.devices.model.ErrorCode.AUTHENTICATION_EXCEPTION
 import com.okta.devices.model.errorResponse
@@ -91,7 +90,9 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.serializer
+import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.hamcrest.CoreMatchers.instanceOf
 import org.hamcrest.CoreMatchers.`is`
@@ -114,7 +115,6 @@ import java.security.UnrecoverableKeyException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
-import javax.net.ssl.HttpsURLConnection
 
 @ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
@@ -132,21 +132,25 @@ class PushAuthenticatorTest : BaseTest() {
     private val serverKey: PrivateKey = testServer.fakeKeyStore.serverKeyPair.private
     private val serverKid: String = testServer.fakeKeyStore.serverKeyAlias
     private val testKeyStore: FakeKeyStore = testServer.fakeKeyStore
-    private val httpClientDefault = DefaultHttpClient(UserAgent(context, BuildConfig.VERSION_NAME))
+    private val customOkHttpClient = OkHttpClient.Builder()
+        .retryOnConnectionFailure(false)
+        .sslSocketFactory(sslConfig.sslContext.socketFactory, sslConfig.x509TrustManager)
+        .hostnameVerifier { _, _ -> true }
+        .build()
 
     companion object {
         lateinit var testServer: FakeServer
+        lateinit var sslConfig: SslConfiguration
 
         @BeforeClass
         @JvmStatic
         fun beforeClass() {
             BaseTest.beforeClass()
-            testServer = runBlocking { FakeServerBuilder.build(null, CoroutineScope(Dispatchers.Default)).await() }
-
-            FakeHttpsConfiguration().configureHttps(null).also {
-                val (sslContext, _) = it
-                HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.socketFactory)
-                HttpsURLConnection.setDefaultHostnameVerifier { _, _ -> true }
+            sslConfig = FakeHttpsConfiguration().configureHttps()
+            testServer = runBlocking {
+                FakeServerBuilder.build(CoroutineScope(Dispatchers.Default)) {
+                    mockWebServer = MockWebServer().apply { useHttps(sslConfig.sslContext.socketFactory, false) }
+                }
             }
         }
 
@@ -173,7 +177,7 @@ class PushAuthenticatorTest : BaseTest() {
             deviceLog = object : DeviceLog {
                 override fun shouldDebugLog(): Boolean = true
             }
-            httpClient = httpClientDefault
+            okHttpClient = customOkHttpClient
         }.getOrThrow()
     }
 
@@ -855,7 +859,7 @@ class PushAuthenticatorTest : BaseTest() {
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage
             coroutineScope = testScope
-            httpClient = httpClientDefault
+            okHttpClient = customOkHttpClient
         }.getOrThrow()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking {
@@ -895,7 +899,7 @@ class PushAuthenticatorTest : BaseTest() {
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage
             coroutineScope = testScope
-            httpClient = httpClientDefault
+            okHttpClient = customOkHttpClient
         }.getOrThrow()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking {
@@ -943,7 +947,7 @@ class PushAuthenticatorTest : BaseTest() {
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage
             coroutineScope = testScope
-            httpClient = httpClientDefault
+            okHttpClient = customOkHttpClient
         }.getOrThrow()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking {
@@ -987,7 +991,7 @@ class PushAuthenticatorTest : BaseTest() {
             deviceStore = testDeviceStorage
             coroutineScope = testScope
             deviceClock = time
-            httpClient = httpClientDefault
+            okHttpClient = customOkHttpClient
         }.getOrThrow()
 
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
@@ -1251,7 +1255,7 @@ class PushAuthenticatorTest : BaseTest() {
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage
             coroutineScope = testScope
-            httpClient = httpClientDefault
+            okHttpClient = customOkHttpClient
         }.getOrThrow()
 
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))

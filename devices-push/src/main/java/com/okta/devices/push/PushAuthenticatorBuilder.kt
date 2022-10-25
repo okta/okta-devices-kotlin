@@ -19,7 +19,6 @@ import android.content.Context
 import com.okta.devices.BuildConfig
 import com.okta.devices.DeviceAuthenticatorCore
 import com.okta.devices.api.device.DeviceInfoCollector
-import com.okta.devices.api.http.DeviceHttpClient
 import com.okta.devices.api.log.DeviceLog
 import com.okta.devices.api.model.ApplicationConfig
 import com.okta.devices.api.security.EncryptionProvider
@@ -42,6 +41,7 @@ import com.okta.devices.storage.api.DeviceStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import okhttp3.OkHttpClient
 
 /**
  * Builder class for configuring and instantiating PushAuthenticator instance.
@@ -54,7 +54,6 @@ import kotlinx.coroutines.Job
 class PushAuthenticatorBuilder internal constructor(context: Application) {
     internal var deviceStore: DeviceStore? = null
     internal var deviceClock: DeviceClock = DeviceClock { System.currentTimeMillis() }
-    internal var httpClient: DeviceHttpClient = DeviceOkHttpClient(UserAgent(context, BuildConfig.VERSION_NAME))
     internal var coroutineScope: CoroutineScope = CoroutineScope(Job() + Dispatchers.IO)
     internal var deviceInfoCollector: DeviceInfoCollector = DeviceInfoCollectorImpl(context)
 
@@ -62,6 +61,11 @@ class PushAuthenticatorBuilder internal constructor(context: Application) {
     internal var signer: SignatureProvider = RsaSignature(deviceKeyStore.value)
     internal var encryptionProvider: EncryptionProvider = AESEncryptionProvider(deviceKeyStore.value)
     internal var useMyAccount = false
+
+    /**
+     * Set the okhttp client
+     */
+    var okHttpClient: OkHttpClient = OkHttpClient.Builder().build()
 
     /**
      * Sets the logging interface for the push authenticator
@@ -99,13 +103,18 @@ class PushAuthenticatorBuilder internal constructor(context: Application) {
             override fun getEncryptionProviderByKey(keyInfoHint: KeyInfoHint): EncryptionProvider = encryptionProvider
         }
 
-        deviceStore ?: run {
-            deviceStore = AuthenticatorDatabase.instance(
-                context,
-                passphrase?.let { EncryptionOption.SQLCipher(it) } ?: EncryptionOption.None
-            )
+        if (deviceStore == null) {
+            deviceStore = AuthenticatorDatabase.instance(context, passphrase?.let { EncryptionOption.SQLCipher(it) } ?: EncryptionOption.None)
         }
 
-        return Modules(checkNotNull(deviceStore), cryptoFactory, httpClient, deviceClock, deviceLog, deviceInfoCollector, coroutineScope)
+        return Modules(
+            checkNotNull(deviceStore),
+            cryptoFactory,
+            DeviceOkHttpClient(UserAgent(context, BuildConfig.VERSION_NAME), okHttpClient),
+            deviceClock,
+            deviceLog,
+            deviceInfoCollector,
+            coroutineScope
+        )
     }
 }
