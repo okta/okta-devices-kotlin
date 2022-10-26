@@ -748,7 +748,8 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val bindingMessage = uuid()
-        val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage)
+        val pushChallengeJws =
+            createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage)
 
         // send ciba push
         testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
@@ -808,7 +809,8 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val bindingMessage = uuid()
-        val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = PREFERRED, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage)
+        val pushChallengeJws =
+            createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = PREFERRED, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage)
 
         // sign in
         testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
@@ -1092,6 +1094,33 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         val completed: Completed = runBlocking { handler.handleRemediation(remediation).getOrThrow() as Completed }
 
         // assert
+        assertThat(completed.state.userVerificationUsed, `is`(false))
+        assertThat(completed.state.accepted, `is`(false))
+        assertThat(completed.state.throwable, `is`(nullValue()))
+    }
+
+    @Test
+    fun `call challenge resolve to deny CIBA challenge, expect successful complete status`() {
+        // arrange
+        val bindingMessage = uuid()
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableCiba = true)).getOrThrow() }
+        val transactionId = uuid()
+        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
+        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
+        val cibaChallengeJws =
+            createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, transactionId, userVerificationChallenge = PREFERRED, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage)
+
+        // fake ciba request
+        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, cibaChallengeJws)
+
+        // act
+        val parseResult = runBlocking { authenticator.parseChallenge(cibaChallengeJws) }.getOrThrow()
+        val cibaConsent = parseResult.resolve().getOrThrow() as PushRemediation.CibaConsent
+        val completed = runBlocking { cibaConsent.deny().getOrThrow() as Completed }
+
+        // assert
+        assertThat(cibaConsent.bindingMessage, `is`(bindingMessage))
         assertThat(completed.state.userVerificationUsed, `is`(false))
         assertThat(completed.state.accepted, `is`(false))
         assertThat(completed.state.throwable, `is`(nullValue()))
