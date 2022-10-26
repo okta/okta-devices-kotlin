@@ -1185,7 +1185,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
 
         // act
         val parseResult = runBlocking { authenticator.parseChallenge(cibaChallengeJws) }.getOrThrow()
-        val cibaConsent = parseResult.resolve().getOrThrow() as PushRemediation.CibaConsent
+        val cibaConsent = parseResult.resolve().getOrThrow() as CibaConsent
         val completed = runBlocking { cibaConsent.deny().getOrThrow() as Completed }
 
         // assert
@@ -1502,6 +1502,52 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         val completed2: Completed = handler.handleRemediation(remediation2.resolve().getOrThrow()).getOrThrow() as Completed
 
         // assert
+        assertThat(completed1.state.userVerificationUsed, `is`(false))
+        assertThat(completed1.state.accepted, `is`(true))
+        assertThat(completed1.state.throwable, `is`(nullValue()))
+        assertThat(completed2.state.userVerificationUsed, `is`(false))
+        assertThat(completed2.state.accepted, `is`(true))
+        assertThat(completed2.state.throwable, `is`(nullValue()))
+    }
+
+    @Test
+    fun `authorize CIBA challenge from multi account scenario, expect authorization success`() = runTest {
+        // arrange
+        val userId1 = uuid()
+        val bindingMessage1 = uuid()
+        val userId2 = uuid()
+        val bindingMessage2 = uuid()
+        val authToken1 = AuthToken.Bearer(createAuthorizationJwt(serverKey, userId = userId1))
+        val authToken2 = AuthToken.Bearer(createAuthorizationJwt(serverKey, userId = userId2))
+        val authenticatorEnrollment1 = authenticator.enroll(authToken1, config, EnrollmentParameters.Push(FcmToken(uuid()), enableCiba = true)).getOrThrow()
+        val authenticatorEnrollment2 = authenticator.enroll(authToken2, config, EnrollmentParameters.Push(FcmToken(uuid()), enableCiba = true)).getOrThrow()
+        val accountInfo1 = testDeviceStorage.accountInformationStore().getByUserId(userId1).first()
+        val accountInfo2 = testDeviceStorage.accountInformationStore().getByUserId(userId2).first()
+        val method1 = accountInfo1.methodInformation.first { PUSH.isEqual(it.methodType) }
+        val method2 = accountInfo2.methodInformation.first { PUSH.isEqual(it.methodType) }
+
+        val transactionId1 = uuid()
+        val transactionId2 = uuid()
+        val cibaChallengeJws1 = createPushJws(authenticatorEnrollment1, PROOF_OF_POSSESSION_KEY, transactionId1, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage1)
+        val cibaChallengeJws2 = createPushJws(authenticatorEnrollment2, PROOF_OF_POSSESSION_KEY, transactionId2, transactionType = TransactionType.CIBA, bindingMessage = bindingMessage2)
+
+        // fake ciba request
+        testServer.fakApiEndpointImpl.signInRequest(userId1, method1.methodId, method1.enrollmentId, transactionId1, oidcClientId, cibaChallengeJws1)
+        testServer.fakApiEndpointImpl.signInRequest(userId2, method2.methodId, method2.enrollmentId, transactionId2, oidcClientId, cibaChallengeJws2)
+
+        // act
+        val remediation1 = authenticator.allEnrollments().getOrThrow().first { it.user().id == userId1 }
+            .retrievePushChallenges(authToken1).getOrThrow().first()
+        val remediation2 = authenticator.allEnrollments().getOrThrow().first { it.user().id == userId2 }
+            .retrievePushChallenges(authToken2).getOrThrow().first()
+        val cibaRequest1 = remediation1.resolve().getOrThrow() as CibaConsent
+        val cibaRequest2 = remediation2.resolve().getOrThrow() as CibaConsent
+        val completed1: Completed = cibaRequest1.accept().getOrThrow() as Completed
+        val completed2: Completed = cibaRequest2.accept().getOrThrow() as Completed
+
+        // assert
+        assertThat(cibaRequest1.bindingMessage, `is`(bindingMessage1))
+        assertThat(cibaRequest2.bindingMessage, `is`(bindingMessage2))
         assertThat(completed1.state.userVerificationUsed, `is`(false))
         assertThat(completed1.state.accepted, `is`(true))
         assertThat(completed1.state.throwable, `is`(nullValue()))
