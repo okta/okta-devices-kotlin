@@ -702,6 +702,39 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
     }
 
     @Test
+    fun `verify normal push when CIBA enabled`() {
+        // arrange
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking {
+            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableCiba = true)).getOrThrow()
+        }
+        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
+        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
+        val transactionId = uuid()
+        val pushChallengeJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, transactionId)
+
+        // ux handling
+        val userInteraction = object : RemediationHandler.UserInteraction {
+            override fun confirm(challenge: Challenge): Boolean = true // accept
+            override fun userVerification(challenge: Challenge): AuthenticationResult? = null
+            override fun fixUserVerificationError(securityError: DeviceAuthenticatorError.SecurityError): Boolean = true
+        }
+        val handler = RemediationHandler(userInteraction)
+
+        // sign in
+        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+
+        // act
+        val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
+        val remediation = parseResult.resolve().getOrThrow()
+        val completed: Completed = runBlocking { handler.handleRemediation(remediation).getOrThrow() as Completed }
+        // assert
+        assertThat(completed.state.userVerificationUsed, `is`(false))
+        assertThat(completed.state.accepted, `is`(true))
+        assertThat(completed.state.throwable, `is`(nullValue()))
+    }
+
+    @Test
     fun `call challenge resolve to accept CIBA push, expect successful complete status`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
