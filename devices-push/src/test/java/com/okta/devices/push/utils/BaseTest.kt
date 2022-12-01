@@ -14,8 +14,8 @@
  */
 package com.okta.devices.push.utils
 
+import android.os.Build
 import androidx.annotation.CallSuper
-import com.okta.devices.fake.util.isRobolectric
 import io.mockk.MockKAnnotations
 import io.mockk.unmockkAll
 import org.junit.After
@@ -32,6 +32,7 @@ open class BaseTest {
     }
 
     companion object {
+        fun isRobolectric() = "robolectric" == Build.FINGERPRINT
 
         @BeforeClass
         @JvmStatic
