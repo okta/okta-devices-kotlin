@@ -19,11 +19,14 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.okta.devices.api.device.TransactionType.CIBA
+import com.okta.devices.api.device.TransactionType.LOGIN
 import com.okta.devices.api.errors.DeviceAuthenticatorError
 import com.okta.devices.api.errors.DeviceAuthenticatorError.InternalDeviceError
 import com.okta.devices.api.errors.DeviceAuthenticatorError.SecurityError.InvalidToken
 import com.okta.devices.api.errors.DeviceAuthenticatorError.SecurityError.UserVerificationRequired
 import com.okta.devices.api.errors.DeviceAuthenticatorError.ServerApiError
+import com.okta.devices.api.http.HttpMethod
 import com.okta.devices.api.log.DeviceLog
 import com.okta.devices.api.model.ApplicationConfig
 import com.okta.devices.api.model.AuthToken
@@ -42,18 +45,23 @@ import com.okta.devices.data.repository.MethodType.UNKNOWN
 import com.okta.devices.data.repository.SettingRequirement
 import com.okta.devices.data.repository.Status.ACTIVE
 import com.okta.devices.data.repository.Status.INACTIVE
-import com.okta.devices.fake.FakeServerBuilder
+import com.okta.devices.fake.TestServerBuilder
 import com.okta.devices.fake.generator.JwtGenerator.createAuthorizationJwt
 import com.okta.devices.fake.generator.JwtGenerator.createIdxPushJws
 import com.okta.devices.fake.generator.OrganizationGenerator
 import com.okta.devices.fake.generator.PolicyGenerator
-import com.okta.devices.fake.server.FakeServer
-import com.okta.devices.fake.server.api.FakeApiEndpoint
+import com.okta.devices.fake.server.api.Endpoint
+import com.okta.devices.fake.server.api.TestServer
+import com.okta.devices.fake.server.controller.TestController
+import com.okta.devices.fake.server.data.Transaction
+import com.okta.devices.fake.server.data.UriPath
+import com.okta.devices.fake.server.mockErrorResponse
 import com.okta.devices.fake.util.FakeData.testSerializer
 import com.okta.devices.fake.util.FakeHttpsConfiguration
 import com.okta.devices.fake.util.FakeKeyStore
 import com.okta.devices.fake.util.SslConfiguration
 import com.okta.devices.fake.util.toJson
+import com.okta.devices.fake.util.toJsonArray
 import com.okta.devices.fake.util.uuid
 import com.okta.devices.http.AUTHORIZATION
 import com.okta.devices.model.AuthorizationType
@@ -91,8 +99,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.serializer
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.hamcrest.CoreMatchers.instanceOf
 import org.hamcrest.CoreMatchers.`is`
@@ -129,27 +137,33 @@ class PushAuthenticatorTest : BaseTest() {
     private val oidcClientId = uuid()
     private val config = DeviceAuthenticatorConfig(URL(testServer.url), oidcClientId)
     private val context: Context = getApplicationContext()
-    private val serverKey: PrivateKey = testServer.fakeKeyStore.serverKeyPair.private
-    private val serverKid: String = testServer.fakeKeyStore.serverKeyAlias
-    private val testKeyStore: FakeKeyStore = testServer.fakeKeyStore
+    private val serverKey: PrivateKey = testKeyStore.serverKeyPair.private
+    private val serverKid: String = testKeyStore.serverKeyAlias
+    private val initialPolicyPath = checkNotNull(testServer.controller.uriPaths().find { it.endPoint == Endpoint.POLICY })
+    private val testController: TestController = testServer.controller as TestController
+
     private val customOkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
         .retryOnConnectionFailure(false)
         .sslSocketFactory(sslConfig.sslContext.socketFactory, sslConfig.x509TrustManager)
         .hostnameVerifier { _, _ -> true }
         .build()
 
     companion object {
-        lateinit var testServer: FakeServer
         lateinit var sslConfig: SslConfiguration
+        lateinit var testServer: TestServer
+        lateinit var testKeyStore: FakeKeyStore
 
         @BeforeClass
         @JvmStatic
         fun beforeClass() {
             BaseTest.beforeClass()
-            sslConfig = FakeHttpsConfiguration().configureHttps()
+            testKeyStore = FakeKeyStore()
+            sslConfig = FakeHttpsConfiguration(isRobolectric = isRobolectric()).configureHttps()
             testServer = runBlocking {
-                FakeServerBuilder.build(CoroutineScope(Dispatchers.Default)) {
-                    mockWebServer = MockWebServer().apply { useHttps(sslConfig.sslContext.socketFactory, false) }
+                TestServerBuilder.build(CoroutineScope(Dispatchers.Default)) {
+                    keyStore = testKeyStore
+                    sslConfiguration = sslConfig
                 }
             }
         }
@@ -157,7 +171,7 @@ class PushAuthenticatorTest : BaseTest() {
         @AfterClass
         @JvmStatic
         fun afterClass() {
-            testServer.tearDown()
+            testServer.shutDown()
             BaseTest.afterClass()
         }
     }
@@ -167,6 +181,7 @@ class PushAuthenticatorTest : BaseTest() {
         val testDispatcher = StandardTestDispatcher()
         testScope = TestScope(Job() + testDispatcher)
         testDeviceStorage = TestDeviceStore(AuthenticatorDatabase.instance(context, EncryptionOption.None, true))
+        testController.idpService.setSupportedTransactionTypes(listOf(LOGIN, CIBA))
         authenticator = PushAuthenticatorBuilder.create(
             ApplicationConfig(getApplicationContext(), "test", "version")
         ) {
@@ -183,7 +198,7 @@ class PushAuthenticatorTest : BaseTest() {
 
     override fun tearDown() {
         super.tearDown()
-        testServer.fakApiEndpointImpl.reset()
+        testServer.reset()
         testScope.testScheduler.advanceUntilIdle()
         testScope.cancel()
         testDeviceStorage.close()
@@ -372,23 +387,23 @@ class PushAuthenticatorTest : BaseTest() {
     fun `call downloadPolicy with an inactive and active policy, expect active policy returned`() {
         // arrange
         // override default endpoint to send two policy
-        testServer.setCustomEndpoint(object : FakeApiEndpoint by testServer.fakApiEndpointImpl {
-            override fun policy(request: RecordedRequest, key: String, oidcClientId: String): MockResponse = runCatching {
-                request.getHeader(AUTHORIZATION)?.run {
-                    if (!startsWith(AuthorizationType.BEARER.value)) return MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
-                    val policyGenerator = PolicyGenerator(baseUrl)
-                    val settingsActive = policyGenerator.createAuthenticatorSetting(oidcClientId = oidcClientId, userVerification = SettingRequirement.REQUIRED)
-                    val settingsInActive = policyGenerator.createAuthenticatorSetting(oidcClientId = oidcClientId, userVerification = SettingRequirement.UNKNOWN)
-                    val policyList = listOf(
-                        policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settingsActive),
-                        policyGenerator.createAuthenticatorPolicy(uuid(), key, INACTIVE, settings = settingsInActive)
-                    )
-                    MockResponse().setBody(testSerializer.encodeToString(ListSerializer(serializer()), policyList))
-                } ?: MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
-            }.getOrElse {
-                MockResponse().setResponseCode(HTTP_INTERNAL_ERROR).setBody(it.errorResponse().toJson())
-            }
-        })
+        fun policy(request: RecordedRequest): MockResponse = runCatching {
+            request.getHeader(AUTHORIZATION)?.run {
+                if (!startsWith(AuthorizationType.BEARER.value)) return MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
+                val key = checkNotNull(request.requestUrl?.queryParameter("key"))
+                val oidcClientId = checkNotNull(request.requestUrl?.queryParameter("oauthClientId"))
+                val policyGenerator = PolicyGenerator(testServer.url)
+                val settingsActive = policyGenerator.createAuthenticatorSetting(oidcClientId = oidcClientId, userVerification = SettingRequirement.REQUIRED)
+                val settingsInActive = policyGenerator.createAuthenticatorSetting(oidcClientId = oidcClientId, userVerification = SettingRequirement.UNKNOWN)
+                val policyList = listOf(
+                    policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settingsActive),
+                    policyGenerator.createAuthenticatorPolicy(uuid(), key, INACTIVE, settings = settingsInActive)
+                )
+                MockResponse().setBody(testSerializer.encodeToString(ListSerializer(serializer()), policyList))
+            } ?: MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
+        }.getOrElse { it.mockErrorResponse() }
+        testServer.addPath(UriPath(HttpMethod.GET.name, Endpoint.POLICY, ::policy))
+
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
 
         // act
@@ -397,29 +412,28 @@ class PushAuthenticatorTest : BaseTest() {
         // assert
         assertThat(result.isSuccess, `is`(true))
         assertThat(result.getOrThrow().requireUserVerification, `is`(true))
-        testServer.setDefaultEndpoint()
+        testServer.addPath(initialPolicyPath) // use the initial path
     }
 
     @Test
     fun `call downloadPolicy with an two active policy, expect error returned`() {
         // arrange
         // override default endpoint to send two active policy
-        testServer.setCustomEndpoint(object : FakeApiEndpoint by testServer.fakApiEndpointImpl {
-            override fun policy(request: RecordedRequest, key: String, oidcClientId: String): MockResponse = runCatching {
-                request.getHeader(AUTHORIZATION)?.run {
-                    if (!startsWith(AuthorizationType.BEARER.value)) return MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
-                    val policyGenerator = PolicyGenerator(baseUrl)
-                    val settings = policyGenerator.createAuthenticatorSetting(oidcClientId = oidcClientId)
-                    val policyList = listOf(
-                        policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settings),
-                        policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settings)
-                    )
-                    MockResponse().setBody(testSerializer.encodeToString(ListSerializer(serializer()), policyList))
-                } ?: MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
-            }.getOrElse {
-                MockResponse().setResponseCode(HTTP_INTERNAL_ERROR).setBody(it.errorResponse().toJson())
-            }
-        })
+        fun policy(request: RecordedRequest): MockResponse = runCatching {
+            request.getHeader(AUTHORIZATION)?.run {
+                if (!startsWith(AuthorizationType.BEARER.value)) return MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
+                val key = checkNotNull(request.requestUrl?.queryParameter("key"))
+                val policyGenerator = PolicyGenerator(testServer.url)
+                val settings = policyGenerator.createAuthenticatorSetting(oidcClientId = oidcClientId)
+                val policyList = listOf(
+                    policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settings),
+                    policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settings)
+                )
+                MockResponse().setBody(testSerializer.encodeToString(ListSerializer(serializer()), policyList))
+            } ?: MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
+        }.getOrElse { it.mockErrorResponse() }
+        testServer.addPath(UriPath(HttpMethod.GET.name, Endpoint.POLICY, ::policy))
+
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
 
         // act
@@ -428,7 +442,7 @@ class PushAuthenticatorTest : BaseTest() {
         // assert
         assertThat(result.isSuccess, `is`(false))
         assertThat(result.exceptionOrNull(), notNullValue())
-        testServer.setDefaultEndpoint()
+        testServer.addPath(initialPolicyPath) // use the initial path
     }
 
     @Test
@@ -557,7 +571,7 @@ class PushAuthenticatorTest : BaseTest() {
             keyTypes = listOf(PROOF_OF_POSSESSION_KEY.serializedName),
             aud = oidcClientId
         )
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, oidcClientId, validChallenge)
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, validChallenge).toJsonArray())
 
         val expiredChallenge = createIdxPushJws(
             serverKey, serverKid, testServer.url, enrollmentId, method.methodId,
@@ -566,7 +580,7 @@ class PushAuthenticatorTest : BaseTest() {
             iat = Instant.now().minus(1, ChronoUnit.DAYS).toEpochMilli(), // expired yesterday
             aud = oidcClientId
         )
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionIdInvalid, oidcClientId, expiredChallenge)
+        testController.idpService.addChallenge(Transaction(transactionIdInvalid, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, expiredChallenge).toJsonArray())
 
         // act
         val challenges: List<PushChallenge> = runBlocking { enrollment.retrievePushChallenges(authToken).getOrThrow() }
@@ -586,12 +600,10 @@ class PushAuthenticatorTest : BaseTest() {
             authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
         }
         val transactionId = uuid()
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val firstChallenge = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, transactionId)
 
         val parsedFirstChallenge = runBlocking { authenticator.parseChallenge(firstChallenge) }.getOrThrow() as PushChallengeImpl
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, oidcClientId, firstChallenge)
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, firstChallenge).toJsonArray())
 
         // act
         val challenges: List<PushChallenge> = runBlocking { enrollment.retrievePushChallenges(authToken).getOrThrow() }
@@ -633,13 +645,14 @@ class PushAuthenticatorTest : BaseTest() {
             keyTypes = listOf(PROOF_OF_POSSESSION_KEY.serializedName),
             aud = oidcClientId
         )
-        testServer.fakApiEndpointImpl.signInRequest(
-            enrollment1.user().id,
-            methodForEnrollment1.methodId,
-            methodForEnrollment1.enrollmentId,
-            transactionId1ForEnrollment1,
-            oidcClientId,
-            challenge1ForEnrollment1
+        testController.idpService.addChallenge(
+            Transaction(
+                transactionId1ForEnrollment1,
+                enrollment1.user().id,
+                methodForEnrollment1.enrollmentId,
+                oidcClientId,
+                challenge1ForEnrollment1
+            ).toJsonArray()
         )
 
         val challenge2ForEnrollment1 = createIdxPushJws(
@@ -652,13 +665,14 @@ class PushAuthenticatorTest : BaseTest() {
             keyTypes = listOf(PROOF_OF_POSSESSION_KEY.serializedName),
             aud = oidcClientId
         )
-        testServer.fakApiEndpointImpl.signInRequest(
-            enrollment1.user().id,
-            methodForEnrollment1.methodId,
-            methodForEnrollment1.enrollmentId,
-            transactionId2ForEnrollment1,
-            oidcClientId,
-            challenge2ForEnrollment1
+        testController.idpService.addChallenge(
+            Transaction(
+                transactionId2ForEnrollment1,
+                enrollment1.user().id,
+                methodForEnrollment1.enrollmentId,
+                oidcClientId,
+                challenge2ForEnrollment1
+            ).toJsonArray()
         )
 
         val challenge1ForEnrollment2 = createIdxPushJws(
@@ -671,13 +685,14 @@ class PushAuthenticatorTest : BaseTest() {
             keyTypes = listOf(PROOF_OF_POSSESSION_KEY.serializedName),
             aud = oidcClientId
         )
-        testServer.fakApiEndpointImpl.signInRequest(
-            enrollment2.user().id,
-            methodForEnrollment2.methodId,
-            methodForEnrollment2.enrollmentId,
-            transactionId1ForEnrollment2,
-            oidcClientId,
-            challenge1ForEnrollment2
+        testController.idpService.addChallenge(
+            Transaction(
+                transactionId1ForEnrollment2,
+                enrollment2.user().id,
+                methodForEnrollment2.enrollmentId,
+                oidcClientId,
+                challenge1ForEnrollment2
+            ).toJsonArray()
         )
 
         val challenge2ForEnrollment2 = createIdxPushJws(
@@ -690,13 +705,14 @@ class PushAuthenticatorTest : BaseTest() {
             keyTypes = listOf(PROOF_OF_POSSESSION_KEY.serializedName),
             aud = oidcClientId
         )
-        testServer.fakApiEndpointImpl.signInRequest(
-            enrollment2.user().id,
-            methodForEnrollment2.methodId,
-            methodForEnrollment2.enrollmentId,
-            transactionId2ForEnrollment2,
-            oidcClientId,
-            challenge2ForEnrollment2
+        testController.idpService.addChallenge(
+            Transaction(
+                transactionId2ForEnrollment2,
+                enrollment2.user().id,
+                methodForEnrollment2.enrollmentId,
+                oidcClientId,
+                challenge2ForEnrollment2
+            ).toJsonArray()
         )
 
         val parsedChallenge1ForEnrollment1 = runBlocking { authenticator.parseChallenge(challenge1ForEnrollment1) }.getOrThrow() as PushChallengeImpl
@@ -725,8 +741,6 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollment = runBlocking {
             authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
         }
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, transactionId)
 
@@ -739,7 +753,7 @@ class PushAuthenticatorTest : BaseTest() {
         val handler = RemediationHandler(userInteraction)
 
         // sign in
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
 
         // act
         val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
@@ -758,13 +772,11 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollment = runBlocking {
             authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
         }
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
 
         // sign in
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
 
         // act
         val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
@@ -790,13 +802,11 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollment = runBlocking {
             authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
         }
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
 
         // sign in
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, enrollment.enrollmentId(), transactionId, oidcClientId, pushChallengeJws)
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
 
         // act
         val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
@@ -822,13 +832,11 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollment = runBlocking {
             authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
         }
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
 
         // sign in
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
 
         // act
         val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
@@ -865,13 +873,11 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollment = runBlocking {
             authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
         }
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
 
         // sign in
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
 
         // act
         val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
@@ -905,14 +911,11 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollment = runBlocking {
             authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
         }
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
 
         // sign in
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
-
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
         // act
         val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
 
@@ -953,14 +956,11 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollment = runBlocking {
             authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
         }
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
 
         // sign in
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
-
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
         // act
         val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
 
@@ -972,6 +972,47 @@ class PushAuthenticatorTest : BaseTest() {
                 // assert
                 assertThat(result.isSuccess, `is`(true))
                 assertThat(result.getOrNull(), instanceOf(UserVerification::class.java))
+            }
+            else -> Assert.fail("UserVerification remediation expected")
+        }
+    }
+
+    @Test
+    fun `remediate enrollment without UV but UV is required expect user verification error and resolve with user consent`() {
+        // arrange
+        val keySigner: SignatureProvider = object : SignatureProvider by testKeyStore.testSigner {
+            override fun getSignature(alias: String): Signature? = null
+        }
+
+        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version")) {
+            signer = keySigner
+            encryptionProvider = testKeyStore.encrypt
+            deviceStore = testDeviceStorage
+            coroutineScope = testScope
+            okHttpClient = customOkHttpClient
+        }.getOrThrow()
+        val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
+        val enrollment = runBlocking {
+            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = false)).getOrThrow()
+        }
+        val transactionId = uuid()
+        val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
+
+        // sign in
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
+        // act
+        val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
+
+        when (val remediation = parseResult.resolve().getOrThrow()) {
+            is UserVerificationError -> {
+                val userConsent = remediation.resolve(consentOnFailure = true).getOrThrow() as UserConsent
+                val completed = runBlocking { userConsent.accept().getOrThrow() as Completed }
+
+                // assert
+                assertThat(remediation.securityError, instanceOf(UserVerificationRequired::class.java))
+                assertThat(completed.state.userVerificationUsed, `is`(false))
+                assertThat(completed.state.accepted, `is`(true))
+                assertThat(completed.state.throwable, `is`(nullValue()))
             }
             else -> Assert.fail("UserVerification remediation expected")
         }
@@ -998,13 +1039,11 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollment = runBlocking {
             authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
         }
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, USER_VERIFICATION_KEY, transactionId, userVerificationChallenge = REQUIRED)
 
         // sign in
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
 
         // act
         invalidTime = true
@@ -1020,8 +1059,6 @@ class PushAuthenticatorTest : BaseTest() {
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow() }
         val transactionId = uuid()
-        val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
-        val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         val pushChallengeJws = createPushJws(enrollment, PROOF_OF_POSSESSION_KEY, transactionId)
 
         // ux handling
@@ -1032,7 +1069,7 @@ class PushAuthenticatorTest : BaseTest() {
         }
         val handler = RemediationHandler(userInteraction)
         // sign in
-        testServer.fakApiEndpointImpl.signInRequest(enrollment.user().id, method.methodId, method.enrollmentId, transactionId, pushChallengeJws)
+        testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
 
         // act
         val parseResult = runBlocking { authenticator.parseChallenge(pushChallengeJws) }.getOrThrow()
@@ -1203,7 +1240,6 @@ class PushAuthenticatorTest : BaseTest() {
             transactionType = TransactionType.CIBA,
             bindingMessage = testBindingMessage
         )
-
         // act
         val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
 
@@ -1289,13 +1325,14 @@ class PushAuthenticatorTest : BaseTest() {
     fun `multi enrollment with alternate url, expect enrollment to be successful`() {
         // arrange
         // override default endpoint to make the localhost url as alternate
-        testServer.setCustomEndpoint(object : FakeApiEndpoint by testServer.fakApiEndpointImpl {
-            override fun oktaOrganization(request: RecordedRequest): MockResponse = runCatching {
-                MockResponse().setBody(OrganizationGenerator("https://okta.okta.com").createOktaOrganization().toJson())
-            }.getOrElse {
-                MockResponse().setResponseCode(HTTP_INTERNAL_ERROR).setBody(it.errorResponse().toJson())
-            }
-        })
+        val initialOrgPath = checkNotNull(testServer.controller.uriPaths().find { it.endPoint == Endpoint.OKTA_ORG })
+        fun oktaOrganization(request: RecordedRequest): MockResponse = runCatching {
+            val url = request.requestUrl?.run { "$scheme://$host" } ?: "https://www.okta.com"
+            MockResponse().setBody(OrganizationGenerator(url).createOktaOrganization().toJson())
+        }.getOrElse {
+            MockResponse().setResponseCode(HTTP_INTERNAL_ERROR).setBody(it.errorResponse().toJson())
+        }
+        testServer.addPath(UriPath(HttpMethod.GET.name, Endpoint.OKTA_ORG, ::oktaOrganization))
 
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val authToken2 = AuthToken.Bearer(createAuthorizationJwt(serverKey))
@@ -1307,7 +1344,7 @@ class PushAuthenticatorTest : BaseTest() {
         // assert
         assertThat(authenticatorEnrollment.organization().url, `is`(testServer.url))
         assertThat(authenticatorEnrollment2.organization().url, `is`(testServer.url))
-        testServer.setDefaultEndpoint()
+        testServer.addPath(initialOrgPath) // reset to initial org path
     }
 
     @Test
@@ -1339,8 +1376,8 @@ class PushAuthenticatorTest : BaseTest() {
 
         // sign in for user1 and user2
         // idp/authenticator uses methodId instead of enrollmentId for pending notifications
-        testServer.fakApiEndpointImpl.signInRequest(userId1, method1.methodId, method1.enrollmentId, transactionId1, oidcClientId, pushChallengeJws1)
-        testServer.fakApiEndpointImpl.signInRequest(userId2, method2.methodId, method2.enrollmentId, transactionId2, oidcClientId, pushChallengeJws2)
+        testController.idpService.addChallenge(Transaction(transactionId1, userId1, method1.enrollmentId, oidcClientId, pushChallengeJws1).toJsonArray())
+        testController.idpService.addChallenge(Transaction(transactionId2, userId2, method2.enrollmentId, oidcClientId, pushChallengeJws2).toJsonArray())
 
         // act
         val remediation1 = authenticator.allEnrollments().getOrThrow().first { it.user().id == userId1 }

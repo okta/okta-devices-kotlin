@@ -14,5 +14,5 @@ repositories {
 
 dependencies {
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.8.0")
-    implementation("org.owasp:dependency-check-gradle:7.3.0")
+    implementation("org.owasp:dependency-check-gradle:7.3.2")
 }
