@@ -36,7 +36,7 @@ This library uses semantic versioning and follows Okta's [Library Version Policy
 
 | Version | Status                             |
 | ------- | ---------------------------------- |
-| 0.0.1   | ⚠ Beta                             |
+| 0.0.2   | ⚠ Beta                             |
 
 ⚠ Beta version is currently in development and isn't ready for production use
 
@@ -63,7 +63,7 @@ See the [Push Sample App] for a complete implementation.
 Add the Okta Devices SDK dependency to your build.gradle file:
 
 ```kotlin
-implementation("com.okta.devices:devices-push:0.0.1")
+implementation("com.okta.devices:devices-push:0.0.2")
 ```
 
 ## Usage
