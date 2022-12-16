@@ -193,6 +193,7 @@ class PushAuthenticatorTest : BaseTest() {
                 override fun shouldDebugLog(): Boolean = true
             }
             okHttpClient = customOkHttpClient
+            useMyAccount = false
         }.getOrThrow()
     }
 
@@ -906,6 +907,7 @@ class PushAuthenticatorTest : BaseTest() {
             deviceStore = testDeviceStorage
             coroutineScope = testScope
             okHttpClient = customOkHttpClient
+            useMyAccount = false
         }.getOrThrow()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking {
@@ -990,6 +992,7 @@ class PushAuthenticatorTest : BaseTest() {
             deviceStore = testDeviceStorage
             coroutineScope = testScope
             okHttpClient = customOkHttpClient
+            useMyAccount = false
         }.getOrThrow()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking {

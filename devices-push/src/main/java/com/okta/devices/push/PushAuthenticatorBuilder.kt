@@ -60,7 +60,7 @@ class PushAuthenticatorBuilder internal constructor(context: Application) {
     private val deviceKeyStore = lazy { DeviceKeyStoreImpl() }
     internal var signer: SignatureProvider = RsaSignature(deviceKeyStore.value)
     internal var encryptionProvider: EncryptionProvider = AESEncryptionProvider(deviceKeyStore.value)
-    internal var useMyAccount = false
+    internal var useMyAccount = true
 
     /**
      * Set the okhttp client
