@@ -1,13 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.android.application") version "7.3.1" apply false
-    id("com.android.library") version "7.3.1" apply false
+    id("com.android.application") version "7.4.0" apply false
+    id("com.android.library") version "7.4.0" apply false
     id("org.jetbrains.kotlin.android") version Version.kotlin apply false
-    id("org.jetbrains.dokka") version "1.6.10" apply false
+    id("org.jetbrains.dokka") version "1.7.20" apply false
     id("com.google.gms.google-services") version "4.3.14" apply false
     id("org.jetbrains.kotlinx.kover") version "0.6.1" apply false
-    id("org.sonarqube") version "3.4.0.2513" apply true
-    id("io.gitlab.arturbosch.detekt") version "1.21.0" apply false
+    id("org.sonarqube") version "3.5.0.2730" apply true
+    id("io.gitlab.arturbosch.detekt") version "1.22.0" apply false
 }
 
 task<Delete>("clean") {

@@ -33,7 +33,7 @@ import com.okta.devices.util.baseUrl
 
 internal class PushAuthenticatorImpl(
     private val core: DeviceAuthenticatorCore,
-    private val myAccount: Boolean = false
+    private val myAccount: Boolean = false,
 ) : PushAuthenticator, DeviceAuthenticator by DeviceAuthenticatorImpl(core, myAccount) {
 
     override suspend fun parseChallenge(challenge: String, allowedClockSkewInSeconds: Long): Result<PushChallenge> = runCatching {

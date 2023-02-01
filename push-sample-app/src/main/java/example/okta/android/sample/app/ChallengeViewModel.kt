@@ -51,14 +51,14 @@ class ChallengeViewModel(
     private val notificationId: Int,
     private val challengeJws: String,
     private val response: UserResponse,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     class Factory(
         private val authenticatorClient: AuthenticatorClient,
         private val notificationId: Int,
         private val challengeJws: String,
-        private val response: UserResponse
+        private val response: UserResponse,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T = ChallengeViewModel(authenticatorClient, notificationId, challengeJws, response) as T
@@ -110,7 +110,7 @@ class ChallengeViewModel(
     fun userVerification(
         userVerification: PushRemediation.UserVerification,
         result: BiometricPrompt.AuthenticationResult?,
-        biometricError: BiometricError? = null
+        biometricError: BiometricError? = null,
     ) = viewModelScope.launch(dispatcher) {
         userVerification.handleUserVerification(result, biometricError = biometricError)
             .onSuccess { challengeState -> uiStateFlow.update { State.IncomingChallenge(challengeState, response) } }

@@ -42,4 +42,12 @@ interface PushEnrollment : AuthenticatorEnrollment {
      * @return [Result] if successful the value will be a list of [PushChallenge]
      */
     suspend fun retrievePushChallenges(authToken: AuthToken, allowedClockSkewInSeconds: Long = 300L): Result<List<PushChallenge>>
+
+    /**
+     * Retrieve a maintenance token. This token is a restricted access token that can only be used for
+     * [updateRegistrationToken], [retrievePushChallenges], and [enableCibaTransaction].
+     *
+     * @return [Result] if successful the value will be an AuthToken
+     */
+    suspend fun retrieveMaintenanceToken(): Result<AuthToken>
 }

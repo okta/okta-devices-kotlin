@@ -96,9 +96,14 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
     }.getOrElse { Result.failure(it) }
 
     suspend fun updateRegistrationTokenForAll(registrationToken: String): Result<String> = runCatching {
-        pushAuthenticator.allEnrollments().getOrThrow().forEach {
-            val authToken = oidcClient.authToken(it.user().id).getOrThrow()
-            it.updateRegistrationToken(authToken, RegistrationToken.FcmToken(registrationToken))
+        pushAuthenticator.allEnrollments().getOrThrow().forEach { enrollment ->
+            val authToken = oidcClient.authToken(enrollment.user().id).getOrThrow()
+            enrollment.updateRegistrationToken(authToken, RegistrationToken.FcmToken(registrationToken)).onFailure { tr ->
+                // retry with maintenance token
+                enrollment.retrieveMaintenanceToken()
+                    .onSuccess { enrollment.updateRegistrationToken(it, RegistrationToken.FcmToken(registrationToken)) }
+                    .onFailure { return Result.failure(tr) }
+            }
         }
         Result.success(registrationToken)
     }.getOrElse { Result.failure(it) }
@@ -123,17 +128,26 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
     }.getOrElse { Result.failure(it) }
 
     suspend fun updateCibaTransaction(enableCiba: Boolean, userId: String): Result<Int> = runCatching {
-        getEnrollment(userId).getOrNull()?.run {
+        getEnrollment(userId).getOrNull()?.let { enrollment ->
             val authToken = oidcClient.authToken(userId).getOrThrow()
-            enableCibaTransaction(authToken, enableCiba)
+            enrollment.enableCibaTransaction(authToken, enableCiba).onFailure { tr ->
+                // retry with maintenance token
+                enrollment.retrieveMaintenanceToken()
+                    .onSuccess { enrollment.enableCibaTransaction(it, enableCiba) }
+                    .onFailure { return Result.failure(tr) }
+            }
         } ?: Result.failure(AuthenticatorError.NoEnrollment)
     }.getOrElse { Result.failure(it) }
 
     suspend fun retrievePendingChallenges(): Result<List<PushChallenge>> = runCatching {
-        pushAuthenticator.allEnrollments().getOrThrow().firstOrNull()?.let {
-            val authToken = oidcClient.authToken(it.user().id).getOrThrow()
-            val challenges = it.retrievePushChallenges(authToken).getOrThrow()
-            Result.success(challenges)
+        pushAuthenticator.allEnrollments().getOrThrow().firstOrNull()?.let { enrollment ->
+            val authToken = oidcClient.authToken(enrollment.user().id).getOrThrow()
+            enrollment.retrievePushChallenges(authToken).onFailure { tr ->
+                // retry with maintenance token
+                enrollment.retrieveMaintenanceToken()
+                    .onSuccess { enrollment.retrievePushChallenges(it) }
+                    .onFailure { return Result.failure(tr) }
+            }
         } ?: Result.failure(AuthenticatorError.NoEnrollment)
     }.getOrElse { Result.failure(it) }
 
