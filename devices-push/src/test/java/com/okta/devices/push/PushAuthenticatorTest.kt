@@ -1409,7 +1409,7 @@ class PushAuthenticatorTest : BaseTest() {
         aud: String = oidcClientId,
         methodType: MethodType = PUSH,
         transactionType: TransactionType = TransactionType.LOGIN,
-        bindingMessage: String = ""
+        bindingMessage: String = "",
     ): String {
         val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
         val enrollmentId = accountInfo.enrollmentInformation.enrollmentId

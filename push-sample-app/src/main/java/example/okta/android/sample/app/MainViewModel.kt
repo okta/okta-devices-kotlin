@@ -42,7 +42,7 @@ import timber.log.Timber
 class MainViewModel(
     private val authenticatorClient: AuthenticatorClient,
     private val oidcClient: OktaOidcClient,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     class Factory(private val authenticatorClient: AuthenticatorClient, private val oidcClient: OktaOidcClient) : ViewModelProvider.Factory {

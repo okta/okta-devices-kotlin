@@ -26,7 +26,7 @@ import com.okta.devices.push.api.PushEnrollment
 
 internal class PushEnrollmentImpl(
     private val enrollmentCore: AuthenticatorEnrollmentCore,
-    private val myAccount: Boolean = false
+    private val myAccount: Boolean = false,
 ) : PushEnrollment, AuthenticatorEnrollment by AuthenticatorEnrollmentImpl(enrollmentCore, myAccount) {
 
     override suspend fun updateRegistrationToken(authToken: AuthToken, registrationToken: RegistrationToken): Result<String> {
@@ -39,4 +39,7 @@ internal class PushEnrollmentImpl(
             { Result.success(it.map { info -> PushChallengeImpl(ChallengeContext(info, enrollmentCore), allowedClockSkewInSeconds) }) },
             { Result.failure(it) }
         )
+
+    override suspend fun retrieveMaintenanceToken(): Result<AuthToken> =
+        enrollmentCore.getToken().fold({ Result.success(AuthToken.Bearer(it.accessToken)) }, { Result.failure(it) })
 }

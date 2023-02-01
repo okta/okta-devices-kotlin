@@ -47,35 +47,36 @@ fun MainComposable(viewModel: MainViewModel) {
                 { viewModel.signOut(userStatus.userId) },
                 { viewModel.refresh(true) }
             )
-            is MainViewModel.State.RemediationStatus -> {
-                when (remediationState) {
-                    is RemediationState.CompletedState -> ChallengeCompleted { viewModel.refresh(false) }
-                    is RemediationState.UserConsentState ->
-                        AcceptPushScreen(
-                            remediationState.userConsent,
-                            { viewModel.acceptOrDeny(true, remediationState.userConsent) },
-                            { viewModel.acceptOrDeny(false, remediationState.userConsent) }
-                        )
-                    is RemediationState.CibaConsentState ->
-                        AcceptCibaPushScreen(
-                            remediationState.cibaConsent,
-                            { viewModel.acceptOrDeny(true, remediationState.cibaConsent) },
-                            { viewModel.acceptOrDeny(false, remediationState.cibaConsent) }
-                        )
-                    is RemediationState.UserVerificationErrorState -> ErrorState(stringResource(R.string.unknown_error), remediationState.userVerificationError.securityError.cause) {
-                        viewModel.refresh(false)
-                    }
-                    is RemediationState.UserVerificationState -> LaunchedEffect(remediationState) {
-                        runCatching {
-                            val result = activity.handleBiometric(remediationState.userVerification.signature)
-                            viewModel.userVerification(remediationState.userVerification, result)
-                        }.onFailure {
-                            if (it is BiometricError.UserCancel || it is BiometricError.Error) viewModel.userVerification(remediationState.userVerification, null)
-                            else viewModel.onError(it)
-                        }
-                    }
-                }
-            }
+            is MainViewModel.State.RemediationStatus -> HandleRemediate(remediationState, viewModel, activity)
+        }
+    }
+}
+
+@Composable
+private fun HandleRemediate(remediationState: RemediationState, viewModel: MainViewModel, activity: MainActivity) = when (remediationState) {
+    is RemediationState.CompletedState -> ChallengeCompleted { viewModel.refresh(false) }
+    is RemediationState.UserConsentState ->
+        AcceptPushScreen(
+            remediationState.userConsent,
+            { viewModel.acceptOrDeny(true, remediationState.userConsent) },
+            { viewModel.acceptOrDeny(false, remediationState.userConsent) }
+        )
+    is RemediationState.CibaConsentState ->
+        AcceptCibaPushScreen(
+            remediationState.cibaConsent,
+            { viewModel.acceptOrDeny(true, remediationState.cibaConsent) },
+            { viewModel.acceptOrDeny(false, remediationState.cibaConsent) }
+        )
+    is RemediationState.UserVerificationErrorState -> ErrorState(stringResource(R.string.unknown_error), remediationState.userVerificationError.securityError.cause) {
+        viewModel.refresh(false)
+    }
+    is RemediationState.UserVerificationState -> LaunchedEffect(remediationState) {
+        runCatching {
+            val result = activity.handleBiometric(remediationState.userVerification.signature)
+            viewModel.userVerification(remediationState.userVerification, result)
+        }.onFailure {
+            if (it is BiometricError.UserCancel || it is BiometricError.Error) viewModel.userVerification(remediationState.userVerification, null)
+            else viewModel.onError(it)
         }
     }
 }

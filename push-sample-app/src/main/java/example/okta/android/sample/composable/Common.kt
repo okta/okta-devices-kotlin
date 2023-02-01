@@ -59,7 +59,7 @@ import kotlinx.coroutines.delay
 fun MagentaBankScaffold(
     title: String = "MagentaBank",
     navigationIcon: @Composable (() -> Unit)? = null,
-    content: @Composable (paddingValues: PaddingValues) -> Unit = {}
+    content: @Composable (paddingValues: PaddingValues) -> Unit = {},
 ) {
     Scaffold(topBar = {
         TopAppBar(
@@ -114,7 +114,7 @@ fun CommonButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
     text: String = "Button",
-    positive: Boolean = true
+    positive: Boolean = true,
 ) {
     Button(
         colors = if (positive) ButtonDefaults.buttonColors() else ButtonDefaults.buttonColors(backgroundColor = Color.White),
@@ -139,7 +139,7 @@ fun CommonDialog(
     secondaryAction: () -> Unit = {},
     dismissAction: () -> Unit = {},
     initialState: Boolean = true,
-    showDialog: (Boolean) -> Unit = { _ -> }
+    showDialog: (Boolean) -> Unit = { _ -> },
 ) {
     if (initialState) {
         AlertDialog(

@@ -50,7 +50,7 @@ suspend fun CibaConsent.handleAcceptOrDeny(accept: Boolean): Result<RemediationS
 suspend fun UserVerification.handleUserVerification(
     result: BiometricPrompt.AuthenticationResult?,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    biometricError: BiometricError? = null
+    biometricError: BiometricError? = null,
 ): Result<RemediationState> {
     return result?.let { authenticationResult ->
         resolve(authenticationResult)

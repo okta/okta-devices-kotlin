@@ -155,7 +155,7 @@ fun HomeScreen(
     disablePushAction: () -> Unit = {},
     updateCibaAction: (enableCiba: Boolean) -> Unit = {},
     signOutAction: () -> Unit = {},
-    refreshAction: () -> Unit = {}
+    refreshAction: () -> Unit = {},
 ) {
     MagentaBankScaffold(stringResource(id = R.string.app_name)) {
         Column(

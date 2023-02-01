@@ -63,7 +63,7 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:${Version.archLifecycleVersion}")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Version.kotlin}")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:${Version.kotlin}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Version.coroutine}")
     implementation("androidx.core:core-ktx:1.9.0")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
@@ -82,7 +82,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Version.coroutine}")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test.ext:junit-ktx:${Version.extJunit}")
-    testImplementation("org.robolectric:robolectric:4.9")
+    testImplementation("org.robolectric:robolectric:4.9.2")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.10.0")
     testImplementation("io.mockk:mockk:1.12.5")
     testImplementation("org.hamcrest:hamcrest-library:2.2")

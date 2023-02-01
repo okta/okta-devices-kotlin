@@ -50,7 +50,7 @@ import java.util.Random
 
 class PushMessagingService(
     dispatcher1: CoroutineDispatcher = Dispatchers.IO,
-    dispatcher2: CoroutineDispatcher = Dispatchers.Unconfined
+    dispatcher2: CoroutineDispatcher = Dispatchers.Unconfined,
 ) : FirebaseMessagingService() {
     private val scope = CoroutineScope(Job() + dispatcher1)
     private val notificationBuilder by lazy {
