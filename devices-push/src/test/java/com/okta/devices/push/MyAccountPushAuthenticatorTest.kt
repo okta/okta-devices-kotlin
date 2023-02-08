@@ -1580,10 +1580,23 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         val enrollment = authenticator.enroll(AuthToken.Bearer(createAuthorizationJwt(serverKey)), config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
 
         // act
-        val authToken = enrollment.retrieveMaintenanceToken().getOrThrow()
+        val authToken = enrollment.retrieveMaintenanceToken(listOf("okta.myAccount.appAuthenticator.maintenance.manage")).getOrThrow()
 
         // assert
         Jwts.parserBuilder().setSigningKey(testKeyStore.serverKeyPair.public).build().parse(authToken.token)
+    }
+
+    @Test
+    fun `get maintenance token with empty scope, expect failure`() = runTest {
+        // arrange
+        val enrollment = authenticator.enroll(AuthToken.Bearer(createAuthorizationJwt(serverKey)), config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
+
+        // act
+        val result = enrollment.retrieveMaintenanceToken(listOf())
+
+        // assert
+        assertThat(result.isFailure, `is`(true))
+        assertThat(result.exceptionOrNull(), `is`(InternalDeviceError::class.java))
     }
 
     @Test
@@ -1601,7 +1614,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         val enrollment = authenticator.enroll(AuthToken.Bearer(createAuthorizationJwt(serverKey)), config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
 
         // act
-        val exception = enrollment.retrieveMaintenanceToken().exceptionOrNull()
+        val exception = enrollment.retrieveMaintenanceToken(listOf("okta.myAccount.appAuthenticator.maintenance.manage")).exceptionOrNull()
 
         // assert
         assertThat(exception, notNullValue())

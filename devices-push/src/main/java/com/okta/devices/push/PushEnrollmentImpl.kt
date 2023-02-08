@@ -16,11 +16,13 @@ package com.okta.devices.push
 
 import com.okta.devices.AuthenticatorEnrollmentCore
 import com.okta.devices.api.AuthenticatorEnrollment
+import com.okta.devices.api.errors.DeviceAuthenticatorError.InternalDeviceError
 import com.okta.devices.api.model.AuthToken
 import com.okta.devices.api.model.RegistrationToken
 import com.okta.devices.authenticator.AuthenticatorEnrollmentImpl
 import com.okta.devices.authenticator.model.ChallengeContext
 import com.okta.devices.model.AuthorizationToken
+import com.okta.devices.model.ErrorCode.EXCEPTION
 import com.okta.devices.push.api.PushChallenge
 import com.okta.devices.push.api.PushEnrollment
 
@@ -40,6 +42,9 @@ internal class PushEnrollmentImpl(
             { Result.failure(it) }
         )
 
-    override suspend fun retrieveMaintenanceToken(): Result<AuthToken> =
-        enrollmentCore.getToken().fold({ Result.success(AuthToken.Bearer(it.accessToken)) }, { Result.failure(it) })
+    override suspend fun retrieveMaintenanceToken(scope: List<String>, authorizationServerId: String?): Result<AuthToken> {
+        if (scope.isEmpty()) return Result.failure(InternalDeviceError(EXCEPTION.value, "Empty scope", IllegalArgumentException("No scope specified")))
+        return enrollmentCore.getToken(scope.joinToString(separator = " "), authorizationServerId?.takeIf { it.isNotBlank() })
+            .fold({ Result.success(AuthToken.Bearer(it.accessToken)) }, { Result.failure(it) })
+    }
 }

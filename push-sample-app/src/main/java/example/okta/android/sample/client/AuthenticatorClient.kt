@@ -58,6 +58,8 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
             .setKeySize(DEFAULT_AES_GCM_MASTER_KEY_SIZE).build()
     ).build()
 
+    private val manageScope = listOf("okta.myAccount.appAuthenticator.maintenance.manage")
+    private val readScope = listOf("okta.myAccount.appAuthenticator.maintenance.read")
     private val passphraseSharedPref: String = "passphraseSharedPref"
     private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
         app,
@@ -100,7 +102,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
             val authToken = oidcClient.authToken(enrollment.user().id).getOrThrow()
             enrollment.updateRegistrationToken(authToken, RegistrationToken.FcmToken(registrationToken)).onFailure { tr ->
                 // retry with maintenance token
-                enrollment.retrieveMaintenanceToken()
+                enrollment.retrieveMaintenanceToken(manageScope, BuildConfig.AUTHORIZATION_SERVER_ID)
                     .onSuccess { enrollment.updateRegistrationToken(it, RegistrationToken.FcmToken(registrationToken)) }
                     .onFailure { return Result.failure(tr) }
             }
@@ -132,7 +134,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
             val authToken = oidcClient.authToken(userId).getOrThrow()
             enrollment.enableCibaTransaction(authToken, enableCiba).onFailure { tr ->
                 // retry with maintenance token
-                enrollment.retrieveMaintenanceToken()
+                enrollment.retrieveMaintenanceToken(manageScope, BuildConfig.AUTHORIZATION_SERVER_ID)
                     .onSuccess { enrollment.enableCibaTransaction(it, enableCiba) }
                     .onFailure { return Result.failure(tr) }
             }
@@ -144,7 +146,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
             val authToken = oidcClient.authToken(enrollment.user().id).getOrThrow()
             enrollment.retrievePushChallenges(authToken).onFailure { tr ->
                 // retry with maintenance token
-                enrollment.retrieveMaintenanceToken()
+                enrollment.retrieveMaintenanceToken(readScope, BuildConfig.AUTHORIZATION_SERVER_ID)
                     .onSuccess { enrollment.retrievePushChallenges(it) }
                     .onFailure { return Result.failure(tr) }
             }
