@@ -36,7 +36,7 @@ android {
         buildConfigField("String", "OIDC_CLIENT_ID", properties.getProperty("oidc.client.id") ?: "\"\"")
         buildConfigField("String", "OIDC_SCOPE", properties.getProperty("oidc.scope") ?: "\"\"")
         buildConfigField("String", "OIDC_REDIRECT_URI", properties.getProperty("oidc.redirect.uri") ?: "\"\"")
-
+        buildConfigField("String", "AUTHORIZATION_SERVER_ID", properties.getProperty("authorization.server.id") ?: "\"\"")
         manifestPlaceholders["webAuthenticationRedirectScheme"] = properties.getProperty("oidc.scheme") ?: ""
     }
 
@@ -75,7 +75,7 @@ dependencies {
     implementation("com.okta.kotlin:web-authentication-ui")
 
     implementation("androidx.core:core-ktx:1.9.0")
-    implementation("androidx.appcompat:appcompat:1.6.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("androidx.activity:activity-compose:1.6.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:${Version.archLifecycleVersion}")
@@ -90,7 +90,7 @@ dependencies {
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:30.5.0"))
+    implementation(platform("com.google.firebase:firebase-bom:31.2.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha04")
 }

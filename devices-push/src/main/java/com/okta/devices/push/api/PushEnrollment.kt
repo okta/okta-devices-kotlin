@@ -47,7 +47,10 @@ interface PushEnrollment : AuthenticatorEnrollment {
      * Retrieve a maintenance token. This token is a restricted access token that can only be used for
      * [updateRegistrationToken], [retrievePushChallenges], and [enableCibaTransaction].
      *
+     * @param scope A list of scopes, such as okta.myAccount.appAuthenticator.maintenance.manage, okta.myAccount.appAuthenticator.maintenance.read
+     * @param authorizationServerId optional authorization server, if not given then it will use the org authorization server. If you
+     * are using custom authorization servers this needs to be your authorization server.
      * @return [Result] if successful the value will be an AuthToken
      */
-    suspend fun retrieveMaintenanceToken(): Result<AuthToken>
+    suspend fun retrieveMaintenanceToken(scope: List<String>, authorizationServerId: String? = null): Result<AuthToken>
 }
