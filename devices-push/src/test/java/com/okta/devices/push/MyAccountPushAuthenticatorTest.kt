@@ -1596,7 +1596,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
 
         // assert
         assertThat(result.isFailure, `is`(true))
-        assertThat(result.exceptionOrNull(), `is`(InternalDeviceError::class.java))
+        assertThat(result.exceptionOrNull(), instanceOf(InternalDeviceError::class.java))
     }
 
     @Test
