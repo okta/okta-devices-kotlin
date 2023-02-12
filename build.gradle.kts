@@ -4,7 +4,7 @@ plugins {
     id("com.android.library") version "7.4.1" apply false
     id("org.jetbrains.kotlin.android") version Version.kotlin apply false
     id("org.jetbrains.dokka") version "1.7.20" apply false
-    id("com.google.gms.google-services") version "4.3.14" apply false
+    id("com.google.gms.google-services") version "4.3.15" apply false
     id("org.jetbrains.kotlinx.kover") version "0.6.1" apply false
     id("org.sonarqube") version "3.5.0.2730" apply true
     id("io.gitlab.arturbosch.detekt") version "1.22.0" apply false

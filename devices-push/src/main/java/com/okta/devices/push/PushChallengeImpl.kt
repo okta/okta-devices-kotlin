@@ -17,7 +17,7 @@ package com.okta.devices.push
 import com.okta.devices.api.errors.DeviceAuthenticatorError
 import com.okta.devices.api.errors.DeviceAuthenticatorError.SecurityError.SecurityException
 import com.okta.devices.api.errors.DeviceAuthenticatorError.SecurityError.UserVerificationRequired
-import com.okta.devices.authenticator.model.ChallengeContext
+import com.okta.devices.authenticator.model.ChallengeContext.RemediateContext
 import com.okta.devices.model.ErrorCode
 import com.okta.devices.model.ErrorCode.USER_VERIFICATION_FAILED
 import com.okta.devices.push.PushRemediation.UserConsent
@@ -34,7 +34,7 @@ import java.security.InvalidKeyException
 import java.security.KeyStoreException
 import java.util.concurrent.TimeUnit
 
-internal class PushChallengeImpl(private val ctx: ChallengeContext, private val allowedClockSkewInSeconds: Long) : PushChallenge {
+internal class PushChallengeImpl(private val ctx: RemediateContext, private val allowedClockSkewInSeconds: Long) : PushChallenge {
     internal val info = ctx.challengeInformation
     override val clientLocation: String = info.clientLocation
     override val clientOs: String = info.clientOs
@@ -61,8 +61,8 @@ internal class PushChallengeImpl(private val ctx: ChallengeContext, private val 
         }
 
         val remediation = when {
-            userVerification == REQUIRED && !ctx.uvEnabled -> UserVerificationError(this, ctx, UserVerificationRequired(USER_VERIFICATION_FAILED.value, ""))
-            (userVerification == PREFERRED && ctx.uvEnabled) || userVerification == REQUIRED -> UserVerification(this, ctx, ctx.baseEnrollment.userVerificationSignature())
+            userVerification == REQUIRED && !ctx.uvEnabled() -> UserVerificationError(this, ctx, UserVerificationRequired(USER_VERIFICATION_FAILED.value, ""))
+            (userVerification == PREFERRED && ctx.uvEnabled()) || userVerification == REQUIRED -> UserVerification(this, ctx, ctx.baseEnrollment.userVerificationSignature())
             else -> when (ctx.challengeInformation.transactionType) {
                 LOGIN -> UserConsent(this, ctx)
                 CIBA -> PushRemediation.CibaConsent(this, ctx)

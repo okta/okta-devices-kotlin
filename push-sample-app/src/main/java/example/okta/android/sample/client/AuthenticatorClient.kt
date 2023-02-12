@@ -99,13 +99,9 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
 
     suspend fun updateRegistrationTokenForAll(registrationToken: String): Result<String> = runCatching {
         pushAuthenticator.allEnrollments().getOrThrow().forEach { enrollment ->
-            val authToken = oidcClient.authToken(enrollment.user().id).getOrThrow()
-            enrollment.updateRegistrationToken(authToken, RegistrationToken.FcmToken(registrationToken)).onFailure { tr ->
-                // retry with maintenance token
-                enrollment.retrieveMaintenanceToken(manageScope, BuildConfig.AUTHORIZATION_SERVER_ID)
-                    .onSuccess { enrollment.updateRegistrationToken(it, RegistrationToken.FcmToken(registrationToken)) }
-                    .onFailure { return Result.failure(tr) }
-            }
+            // must use maintenance token
+            val token = enrollment.retrieveMaintenanceToken(manageScope, BuildConfig.AUTHORIZATION_SERVER_ID).getOrThrow()
+            enrollment.updateRegistrationToken(token, RegistrationToken.FcmToken(registrationToken))
         }
         Result.success(registrationToken)
     }.getOrElse { Result.failure(it) }
@@ -131,25 +127,17 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
 
     suspend fun updateCibaTransaction(enableCiba: Boolean, userId: String): Result<Int> = runCatching {
         getEnrollment(userId).getOrNull()?.let { enrollment ->
-            val authToken = oidcClient.authToken(userId).getOrThrow()
-            enrollment.enableCibaTransaction(authToken, enableCiba).onFailure { tr ->
-                // retry with maintenance token
-                enrollment.retrieveMaintenanceToken(manageScope, BuildConfig.AUTHORIZATION_SERVER_ID)
-                    .onSuccess { enrollment.enableCibaTransaction(it, enableCiba) }
-                    .onFailure { return Result.failure(tr) }
-            }
+            // must use maintenance token
+            val token = enrollment.retrieveMaintenanceToken(manageScope, BuildConfig.AUTHORIZATION_SERVER_ID).getOrThrow()
+            enrollment.enableCibaTransaction(token, enableCiba)
         } ?: Result.failure(AuthenticatorError.NoEnrollment)
     }.getOrElse { Result.failure(it) }
 
     suspend fun retrievePendingChallenges(): Result<List<PushChallenge>> = runCatching {
         pushAuthenticator.allEnrollments().getOrThrow().firstOrNull()?.let { enrollment ->
-            val authToken = oidcClient.authToken(enrollment.user().id).getOrThrow()
-            enrollment.retrievePushChallenges(authToken).onFailure { tr ->
-                // retry with maintenance token
-                enrollment.retrieveMaintenanceToken(readScope, BuildConfig.AUTHORIZATION_SERVER_ID)
-                    .onSuccess { enrollment.retrievePushChallenges(it) }
-                    .onFailure { return Result.failure(tr) }
-            }
+            // must use maintenance token
+            val token = enrollment.retrieveMaintenanceToken(readScope, BuildConfig.AUTHORIZATION_SERVER_ID).getOrThrow()
+            enrollment.retrievePushChallenges(token)
         } ?: Result.failure(AuthenticatorError.NoEnrollment)
     }.getOrElse { Result.failure(it) }
 
