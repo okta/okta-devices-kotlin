@@ -59,7 +59,6 @@ class ChallengeInformationTest : BaseTest() {
         val transactionTime = Date(System.currentTimeMillis()).toString()
         val clientLocation = "San Francisco, CA, USA"
         val clientOs = "Mac OS X"
-        val keyTypes = listOf("userVerification", "proofOfPossession")
         val riskLevel = "HIGH"
         val challengeTextItems = listOf("1", "2", "3")
         val unusualActivities = listOf("ANOMALOUS_DEVICE", "ANOMALOUS_LOCATION")
@@ -76,7 +75,7 @@ class ChallengeInformationTest : BaseTest() {
         val pushJws = createIdxPushJws(
             serverKey, serverKid, issuer, authenticatorEnrollmentId, methodEnrollmentId, aud,
             iat, nbf, exp, method, transactionId, transactionType, bindingMessage, transactionTime, clientLocation, clientOs,
-            keyTypes, riskLevel, challengeTextItems, unusualActivities, requestReferrer, appInstanceName,
+            riskLevel, challengeTextItems, unusualActivities, requestReferrer, appInstanceName,
             userMediationChallenge, userVerificationChallenge, requiredSignals, requiredSignalProviders,
             loginHint, orgId, userId
         )
@@ -112,9 +111,9 @@ class ChallengeInformationTest : BaseTest() {
             challengeInfo.requiredSignalProviders,
             `is`(
                 listOf(
-                    SignalProviderEntry("com.okta.device.integrity", Collect.REQUIRED),
-                    SignalProviderEntry("com.okta.device.attestation", Collect.REQUIRED),
-                    SignalProviderEntry("com.okta.device.malware", Collect.REQUIRED)
+                    SignalProviderEntry("com.okta.device.integrity", Collect.REQUIRED.name),
+                    SignalProviderEntry("com.okta.device.attestation", Collect.REQUIRED.name),
+                    SignalProviderEntry("com.okta.device.malware", Collect.REQUIRED.name)
                 )
             )
         )

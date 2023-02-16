@@ -20,7 +20,7 @@ import com.okta.devices.api.errors.DeviceAuthenticatorError.InternalDeviceError
 import com.okta.devices.api.model.AuthToken
 import com.okta.devices.api.model.RegistrationToken
 import com.okta.devices.authenticator.AuthenticatorEnrollmentImpl
-import com.okta.devices.authenticator.model.ChallengeContext
+import com.okta.devices.authenticator.model.ChallengeContext.RemediateContext
 import com.okta.devices.model.AuthorizationToken
 import com.okta.devices.model.ErrorCode.EXCEPTION
 import com.okta.devices.push.api.PushChallenge
@@ -32,13 +32,16 @@ internal class PushEnrollmentImpl(
 ) : PushEnrollment, AuthenticatorEnrollment by AuthenticatorEnrollmentImpl(enrollmentCore, myAccount) {
 
     override suspend fun updateRegistrationToken(authToken: AuthToken, registrationToken: RegistrationToken): Result<String> {
-        return if (myAccount) enrollmentCore.patchRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
-        else enrollmentCore.updateRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
+        return if (myAccount) {
+            enrollmentCore.patchRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
+        } else {
+            enrollmentCore.updateRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
+        }
     }
 
     override suspend fun retrievePushChallenges(authToken: AuthToken, allowedClockSkewInSeconds: Long): Result<List<PushChallenge>> =
         enrollmentCore.retrievePushChallenges(AuthorizationToken.Bearer(authToken.token), allowedClockSkewInSeconds).fold(
-            { Result.success(it.map { info -> PushChallengeImpl(ChallengeContext(info, enrollmentCore), allowedClockSkewInSeconds) }) },
+            { Result.success(it.map { info -> PushChallengeImpl(RemediateContext(info, enrollmentCore), allowedClockSkewInSeconds) }) },
             { Result.failure(it) }
         )
 

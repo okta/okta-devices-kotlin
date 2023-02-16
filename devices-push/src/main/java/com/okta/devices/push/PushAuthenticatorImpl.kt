@@ -21,7 +21,7 @@ import com.okta.devices.api.model.DeviceAuthenticatorConfig
 import com.okta.devices.api.model.EnrollmentParameters
 import com.okta.devices.authenticator.DeviceAuthenticatorImpl
 import com.okta.devices.authenticator.exceptions.toResult
-import com.okta.devices.authenticator.model.ChallengeContext
+import com.okta.devices.authenticator.model.ChallengeContext.RemediateContext
 import com.okta.devices.data.repository.MethodType.PUSH
 import com.okta.devices.model.AuthorizationToken
 import com.okta.devices.model.EnrollmentCoreParameters
@@ -41,8 +41,10 @@ internal class PushAuthenticatorImpl(
         core.getAuthenticatorEnrollmentById(challengeInfo.authenticatorEnrollmentId).fold(
             {
                 if (challengeInfo.method == PUSH) {
-                    Result.success(PushChallengeImpl(ChallengeContext(challengeInfo, it), allowedClockSkewInSeconds))
-                } else Result.failure(IllegalArgumentException("Challenge is not of type push"))
+                    Result.success(PushChallengeImpl(RemediateContext(challengeInfo, it), allowedClockSkewInSeconds))
+                } else {
+                    Result.failure(IllegalArgumentException("Challenge is not of type push"))
+                }
             },
             { Result.failure(it) }
         )
@@ -57,13 +59,17 @@ internal class PushAuthenticatorImpl(
             userVerificationEnabled = params.enableUserVerification,
             cibaEnabled = params.enableCiba
         )
-        return if (myAccount) core.enrollMyAccount(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
-            { Result.success(PushEnrollmentImpl(it, myAccount)) },
-            { Result.failure(it) }
-        ) else core.enroll(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
-            { Result.success(PushEnrollmentImpl(it, myAccount)) },
-            { Result.failure(it) }
-        )
+        return if (myAccount) {
+            core.enrollMyAccount(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
+                { Result.success(PushEnrollmentImpl(it, myAccount)) },
+                { Result.failure(it) }
+            )
+        } else {
+            core.enroll(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
+                { Result.success(PushEnrollmentImpl(it, myAccount)) },
+                { Result.failure(it) }
+            )
+        }
     }
 
     override suspend fun allEnrollments(): Result<List<PushEnrollment>> = core.getAllEnrollments().fold(
