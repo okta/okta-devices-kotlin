@@ -45,9 +45,9 @@ internal class PushEnrollmentImpl(
             { Result.failure(it) }
         )
 
-    override suspend fun retrieveMaintenanceToken(scope: List<String>, authorizationServerId: String?): Result<AuthToken> {
+    override suspend fun retrieveMaintenanceToken(scope: List<String>): Result<AuthToken> {
         if (scope.isEmpty()) return Result.failure(InternalDeviceError(EXCEPTION.value, "Empty scope", IllegalArgumentException("No scope specified")))
-        return enrollmentCore.getToken(scope.joinToString(separator = " "), authorizationServerId?.takeIf { it.isNotBlank() })
+        return enrollmentCore.getToken(scope.joinToString(separator = " "))
             .fold({ Result.success(AuthToken.Bearer(it.accessToken)) }, { Result.failure(it) })
     }
 }

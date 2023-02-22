@@ -100,7 +100,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
     suspend fun updateRegistrationTokenForAll(registrationToken: String): Result<String> = runCatching {
         pushAuthenticator.allEnrollments().getOrThrow().forEach { enrollment ->
             // must use maintenance token
-            val token = enrollment.retrieveMaintenanceToken(manageScope, BuildConfig.AUTHORIZATION_SERVER_ID).getOrThrow()
+            val token = enrollment.retrieveMaintenanceToken(manageScope).getOrThrow()
             enrollment.updateRegistrationToken(token, RegistrationToken.FcmToken(registrationToken))
         }
         Result.success(registrationToken)
@@ -128,7 +128,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
     suspend fun updateCibaTransaction(enableCiba: Boolean, userId: String): Result<Int> = runCatching {
         getEnrollment(userId).getOrNull()?.let { enrollment ->
             // must use maintenance token
-            val token = enrollment.retrieveMaintenanceToken(manageScope, BuildConfig.AUTHORIZATION_SERVER_ID).getOrThrow()
+            val token = enrollment.retrieveMaintenanceToken(manageScope).getOrThrow()
             enrollment.enableCibaTransaction(token, enableCiba)
         } ?: Result.failure(AuthenticatorError.NoEnrollment)
     }.getOrElse { Result.failure(it) }
@@ -136,7 +136,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
     suspend fun retrievePendingChallenges(): Result<List<PushChallenge>> = runCatching {
         pushAuthenticator.allEnrollments().getOrThrow().firstOrNull()?.let { enrollment ->
             // must use maintenance token
-            val token = enrollment.retrieveMaintenanceToken(readScope, BuildConfig.AUTHORIZATION_SERVER_ID).getOrThrow()
+            val token = enrollment.retrieveMaintenanceToken(readScope).getOrThrow()
             enrollment.retrievePushChallenges(token)
         } ?: Result.failure(AuthenticatorError.NoEnrollment)
     }.getOrElse { Result.failure(it) }
