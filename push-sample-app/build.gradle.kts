@@ -36,7 +36,6 @@ android {
         buildConfigField("String", "OIDC_CLIENT_ID", properties.getProperty("oidc.client.id") ?: "\"\"")
         buildConfigField("String", "OIDC_SCOPE", properties.getProperty("oidc.scope") ?: "\"\"")
         buildConfigField("String", "OIDC_REDIRECT_URI", properties.getProperty("oidc.redirect.uri") ?: "\"\"")
-        buildConfigField("String", "AUTHORIZATION_SERVER_ID", properties.getProperty("authorization.server.id") ?: "\"\"")
         manifestPlaceholders["webAuthenticationRedirectScheme"] = properties.getProperty("oidc.scheme") ?: ""
     }
 
