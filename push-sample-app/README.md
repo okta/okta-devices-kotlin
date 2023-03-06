@@ -28,7 +28,7 @@ oidc.scheme={yourOidcScheme}
 org.url="{yourOrgUrl}"
 oidc.client.id="{yourOrgClientId}"
 oidc.redirect.uri="{yourRedirectUri}"
-oidc.scope="openid profile email offline_access okta.myAccount.appAuthenticator.manage okta.myAccount.appAuthenticator.read okta.users.read.self"
+oidc.scope="openid profile email offline_access okta.myAccount.appAuthenticator.manage okta.myAccount.appAuthenticator.read"
 ```
 
 2. Download google-services.json from your organization's Firebase and add to your project directory, to obtain the file, you can follow the instruction [here](https://firebase.google.com/docs/android/setup)
