@@ -13,6 +13,6 @@ repositories {
 }
 
 dependencies {
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.15.0")
-    implementation("org.owasp:dependency-check-gradle:8.0.2")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.16.0")
+    implementation("org.owasp:dependency-check-gradle:8.1.2")
 }

@@ -89,7 +89,7 @@ dependencies {
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:31.2.1"))
+    implementation(platform("com.google.firebase:firebase-bom:31.2.3"))
     implementation("com.google.firebase:firebase-messaging-ktx")
-    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha04")
+    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha05")
 }

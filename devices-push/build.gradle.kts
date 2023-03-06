@@ -76,7 +76,7 @@ dependencies {
 
     testImplementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
     testImplementation("com.okta.devices:devices-fake-server:${Version.devicesFakeServer}")
-    testImplementation("androidx.arch.core:core-testing:2.1.0")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("androidx.room:room-testing:${Version.room}")
     testImplementation("org.jetbrains.kotlin:kotlin-test:${Version.kotlin}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Version.coroutine}")
