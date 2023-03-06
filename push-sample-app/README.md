@@ -14,7 +14,7 @@ This example shows you how to use the [Okta Devices SDK](https://github.com/okta
 ## Prerequisites
 
 In order to use this project, your org's admin needs to:
-1. Add an OIDC app with the proper scopes (`okta.authenticators.manage.self`, `okta.authenticators.read` and `okta.users.read.self`).
+1. Add an OIDC app with the proper scopes (`okta.myAccount.appAuthenticator.manage`, `okta.myAccount.appAuthenticator.read` and `openid`).
 2. Create an FCM config.
 3. Create a custom authenticator using the FCM config created above.
 
@@ -28,7 +28,7 @@ oidc.scheme={yourOidcScheme}
 org.url="{yourOrgUrl}"
 oidc.client.id="{yourOrgClientId}"
 oidc.redirect.uri="{yourRedirectUri}"
-oidc.scope="openid profile email offline_access okta.authenticators.manage.self okta.authenticators.read okta.users.read.self"
+oidc.scope="openid profile email offline_access okta.myAccount.appAuthenticator.manage okta.myAccount.appAuthenticator.read okta.users.read.self"
 ```
 
 2. Download google-services.json from your organization's Firebase and add to your project directory, to obtain the file, you can follow the instruction [here](https://firebase.google.com/docs/android/setup)
