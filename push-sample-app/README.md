@@ -14,7 +14,7 @@ This example shows you how to use the [Okta Devices SDK](https://github.com/okta
 ## Prerequisites
 
 In order to use this project, your org's admin needs to:
-1. Add an OIDC app with the proper scopes (`okta.myAccount.appAuthenticator.manage`, `okta.myAccount.appAuthenticator.read` and `openid`).
+1. Add an OIDC app with the proper Okta API scopes ('okta.myAccount.appAuthenticator.manage', 'okta.myAccount.appAuthenticator.read') along with any OIDC scopes ('openid', 'profile', 'email').
 2. Create an FCM config.
 3. Create a custom authenticator using the FCM config created above.
 
