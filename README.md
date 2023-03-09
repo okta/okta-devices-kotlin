@@ -401,18 +401,18 @@ The SDK communicates with an Okta server using the HTTPS protocol and requires a
 - Enable and disable CIBA capability for push authenticator enrollment
 - Delete push authenticator enrollment
 
-  **Note:** Applications that use sensitive data shouldn't store or cache access tokens or refresh access tokens that contain the `okta.myAccount.appAuthenticator.manage` scope. Instead, reauthenticate the user and get a new access token.
-  High risk operations include the following:
+**Note:** Applications that use sensitive data shouldn't store or cache access tokens or refresh access tokens that contain the `okta.myAccount.appAuthenticator.manage` scope. Instead, reauthenticate the user and get a new access token.
+High risk operations include the following:
 - Enroll push authenticator
 - Enable or disable user verification for push authenticator enrollment
 - Delete push authenticator enrollment
 
-  Other operations are low risk and may not require interactive authentication. For that reason, the Okta Push SDK implements the silent user reauthentication API `retrieveMaintenanceToken`. By retrieving a maintenance access token, an application can silently perform the following operations:
+Other operations are low risk and may not require interactive authentication. For that reason, the Okta Push SDK implements the silent user reauthentication API `retrieveMaintenanceToken`. By retrieving a maintenance access token, an application can silently perform the following operations:
 - Request pending push challenges
 - Enable and disable CIBA capability for the push authenticator enrollment
 - Update device tokens for push authenticator enrollment
 
-  Usage example:
+Usage example:
 ```kotlin
 suspend fun retrievePushChallenges() {
     val readScope = listOf("okta.myAccount.appAuthenticator.maintenance.read")
