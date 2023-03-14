@@ -13,7 +13,7 @@ object DevicesConfig {
     const val pushSampleAppVersionCode = 1
     const val pushSampleAppVersionName = "1.0.0"
 
-    const val devicesPushVersion = "0.0.3"
+    const val devicesPushVersion = "1.0.0"
 
     data class OssrhCredentials(
         val ossrhUsername: String,
