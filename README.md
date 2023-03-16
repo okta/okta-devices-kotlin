@@ -34,11 +34,10 @@ This library is Okta's multi-factor push authentication service that provides a 
 
 This library uses semantic versioning and follows Okta's [Library Version Policy][okta-library-versioning].
 
-| Version | Status                             |
-| ------- | ---------------------------------- |
-| 0.0.2   | ⚠ Beta                             |
+| Version | Status |
+|---------|--------|
+| 1.0.0   | Stable |
 
-⚠ Beta version is currently in development and isn't ready for production use
 
 The latest release can always be found on the [releases page][github-releases].
 
@@ -63,7 +62,7 @@ See the [Push Sample App] for a complete implementation.
 Add the Okta Devices SDK dependency to your build.gradle file:
 
 ```kotlin
-implementation("com.okta.devices:devices-push:0.0.2")
+implementation("com.okta.devices:devices-push:1.0.0")
 ```
 
 ## Usage
