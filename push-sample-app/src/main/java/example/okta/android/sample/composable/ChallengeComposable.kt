@@ -61,7 +61,9 @@ fun HandleIncomingChallenge(incomingChallenge: IncomingChallenge, viewModel: Cha
                         { viewModel.acceptOrDeny(true, remediationState.userConsent) },
                         { viewModel.acceptOrDeny(false, remediationState.userConsent) }
                     )
-                } else viewModel.acceptOrDeny(response == UserResponse.ACCEPTED, remediationState.userConsent)
+                } else {
+                    viewModel.acceptOrDeny(response == UserResponse.ACCEPTED, remediationState.userConsent)
+                }
             }
             is RemediationState.CibaConsentState -> {
                 if (response == UserResponse.NONE) {
@@ -70,7 +72,9 @@ fun HandleIncomingChallenge(incomingChallenge: IncomingChallenge, viewModel: Cha
                         { viewModel.acceptOrDeny(true, remediationState.cibaConsent) },
                         { viewModel.acceptOrDeny(false, remediationState.cibaConsent) }
                     )
-                } else viewModel.acceptOrDeny(response == UserResponse.ACCEPTED, remediationState.cibaConsent)
+                } else {
+                    viewModel.acceptOrDeny(response == UserResponse.ACCEPTED, remediationState.cibaConsent)
+                }
             }
             is RemediationState.UserVerificationState -> LaunchedEffect(remediationState) {
                 runCatching {

@@ -22,10 +22,12 @@ import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
 import org.junit.BeforeClass
+import org.robolectric.annotation.ConscryptMode
 import org.robolectric.shadows.ShadowLog
 import java.security.Provider
 import java.security.Security
 
+@ConscryptMode(value = ConscryptMode.Mode.OFF)
 open class BaseTest {
     init {
         if (isRobolectric()) ShadowLog.stream = System.out
