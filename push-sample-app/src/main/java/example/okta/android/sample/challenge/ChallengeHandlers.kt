@@ -58,7 +58,9 @@ suspend fun UserVerification.handleUserVerification(
                 // Accept since user already confirmed, we can also ask for approval.
                 if (pushRemediation is UserConsent) {
                     withContext(dispatcher) { pushRemediation.accept().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) }) }
-                } else Result.success(pushRemediation.remediationAsState())
+                } else {
+                    Result.success(pushRemediation.remediationAsState())
+                }
             }, { Result.failure(it) })
     } ?: when (biometricError) {
         is BiometricError.TemporaryUnavailable -> temporarilyUnavailable().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })

@@ -17,14 +17,14 @@ spotless {
     }
     kotlin {
         target("**/*.kt")
-        ktlint("0.46.1")
+        ktlint("0.48.0")
         licenseHeaderFile("${rootDir}/config/license")
         endWithNewline()
     }
     kotlinGradle {
         // same as kotlin, but for .gradle.kts files (defaults to "*.gradle.kts")
         target("*.gradle.kts", "additionalScripts/*.gradle.kts", "buildSrc/*.gradle.kts")
-        ktlint("0.46.1")
+        ktlint("0.48.0")
         endWithNewline()
     }
     format("xml") {

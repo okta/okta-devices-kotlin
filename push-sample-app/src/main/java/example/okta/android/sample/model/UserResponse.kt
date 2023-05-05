@@ -14,6 +14,7 @@
  */
 package example.okta.android.sample.model
 
+@Suppress("ktlint:trailing-comma-on-declaration-site")
 enum class UserResponse {
     ACCEPTED,
     DENIED,

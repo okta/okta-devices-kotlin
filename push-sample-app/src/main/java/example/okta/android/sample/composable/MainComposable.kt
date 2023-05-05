@@ -75,8 +75,11 @@ private fun HandleRemediate(remediationState: RemediationState, viewModel: MainV
             val result = activity.handleBiometric(remediationState.userVerification.signature)
             viewModel.userVerification(remediationState.userVerification, result)
         }.onFailure {
-            if (it is BiometricError.UserCancel || it is BiometricError.Error) viewModel.userVerification(remediationState.userVerification, null)
-            else viewModel.onError(it)
+            if (it is BiometricError.UserCancel || it is BiometricError.Error) {
+                viewModel.userVerification(remediationState.userVerification, null)
+            } else {
+                viewModel.onError(it)
+            }
         }
     }
 }

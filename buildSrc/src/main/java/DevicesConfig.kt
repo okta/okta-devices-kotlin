@@ -8,7 +8,7 @@ object DevicesConfig {
     const val minSdkVersion = 24
     const val compileSdkVersion = 33
     const val targetSdkVersion = 33
-    const val buildToolsVersion = "33.0.0"
+    const val buildToolsVersion = "33.0.2"
 
     const val pushSampleAppVersionCode = 1
     const val pushSampleAppVersionName = "1.0.0"

@@ -130,7 +130,6 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
     private lateinit var testDeviceStorage: DeviceStore
     private lateinit var testScope: TestScope
 
-    private val oidcClientId = uuid()
     private val config = DeviceAuthenticatorConfig(URL(testServer.url), oidcClientId)
     private val context: Context = getApplicationContext()
     private val serverKey: PrivateKey = testKeyStore.serverKeyPair.private
@@ -149,6 +148,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         lateinit var testKeyStore: FakeKeyStore
         lateinit var server: MockWebServer
         lateinit var myAccountService: MyAccountServiceImpl
+        private val oidcClientId = uuid()
 
         @BeforeClass
         @JvmStatic
@@ -157,7 +157,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
             server = MockWebServer()
             testKeyStore = FakeKeyStore()
             sslConfig = FakeHttpsConfiguration(isRobolectric = isRobolectric()).configureHttps()
-            myAccountService = MyAccountServiceImpl(server.baseUrl(), testKeyStore)
+            myAccountService = MyAccountServiceImpl(server.baseUrl(), testKeyStore, oidcClientId)
             testServer = runBlocking {
                 TestServerBuilder.build(CoroutineScope(Dispatchers.Default)) {
                     mockWebServer = server
@@ -870,6 +870,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -903,6 +904,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -933,6 +935,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -963,6 +966,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -1002,6 +1006,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
                 assertThat(result.isFailure, `is`(true))
                 assertThat(result.exceptionOrNull(), instanceOf(UnrecoverableKeyException::class.java))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -1045,6 +1050,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -1093,6 +1099,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
                 assertThat(result.isSuccess, `is`(true))
                 assertThat(result.getOrNull(), instanceOf(UserVerification::class.java))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -1137,6 +1144,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
