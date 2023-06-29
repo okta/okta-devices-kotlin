@@ -132,6 +132,7 @@ class PushAuthenticatorTest : BaseTest() {
     private lateinit var testDeviceStorage: DeviceStore
     private lateinit var testScope: TestScope
 
+    private val applicationInstallationId = uuid()
     private val oidcClientId = uuid()
     private val config = DeviceAuthenticatorConfig(URL(testServer.url), oidcClientId)
     private val context: Context = getApplicationContext()
@@ -181,7 +182,7 @@ class PushAuthenticatorTest : BaseTest() {
         testDeviceStorage = TestDeviceStore(AuthenticatorDatabase.instance(context, EncryptionOption.None, true))
         testController.idpService.setSupportedTransactionTypes(listOf(LOGIN, CIBA))
         authenticator = PushAuthenticatorBuilder.create(
-            ApplicationConfig(getApplicationContext(), "test", "version")
+            ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)
         ) {
             signer = testKeyStore.testSigner
             encryptionProvider = testKeyStore.encrypt
@@ -262,11 +263,11 @@ class PushAuthenticatorTest : BaseTest() {
             testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first()
                 .methodInformation.first { PUSH.isEqual(it.methodType) }
         }
-        assertThat(methodUpdated.userVerificationKey, notNullValue())
-        assertThat(currentMethod.userVerificationKey, nullValue())
-        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKey?.keyId)), `is`(true))
+        assertThat(methodUpdated.userVerificationKeys, notNullValue())
+        assertThat(currentMethod.userVerificationKeys, nullValue())
+        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKeys?.getUserVerificationKey()?.keyId)), `is`(true))
         // Only difference is the uv key. so copy the new key to check other fields are same
-        assertThat(methodUpdated, `is`(currentMethod.copy(userVerificationKey = methodUpdated.userVerificationKey)))
+        assertThat(methodUpdated, `is`(currentMethod.copy(userVerificationKeys = methodUpdated.userVerificationKeys)))
     }
 
     @Test
@@ -291,13 +292,13 @@ class PushAuthenticatorTest : BaseTest() {
             testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first()
                 .methodInformation.first { PUSH.isEqual(it.methodType) }
         }
-        assertThat(methodUpdated.userVerificationKey, notNullValue())
-        assertThat(currentMethod.userVerificationKey, notNullValue())
-        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKey?.keyId)), `is`(true))
+        assertThat(methodUpdated.userVerificationKeys, notNullValue())
+        assertThat(currentMethod.userVerificationKeys, notNullValue())
+        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKeys?.getUserVerificationKey()?.keyId)), `is`(true))
         // check the previous uv key is removed
-        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(currentMethod.userVerificationKey?.keyId)), `is`(false))
+        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(currentMethod.userVerificationKeys?.getUserVerificationKey()?.keyId)), `is`(false))
         // Only difference is the uv key. so copy the new key to check other fields are same
-        assertThat(methodUpdated, `is`(currentMethod.copy(userVerificationKey = methodUpdated.userVerificationKey)))
+        assertThat(methodUpdated, `is`(currentMethod.copy(userVerificationKeys = methodUpdated.userVerificationKeys)))
     }
 
     @Test
@@ -322,12 +323,12 @@ class PushAuthenticatorTest : BaseTest() {
             testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first()
                 .methodInformation.first { PUSH.isEqual(it.methodType) }
         }
-        assertThat(methodUpdated.userVerificationKey, nullValue())
-        assertThat(currentMethod.userVerificationKey, notNullValue())
+        assertThat(methodUpdated.userVerificationKeys, nullValue())
+        assertThat(currentMethod.userVerificationKeys, notNullValue())
         // check the key is deleted from keystore
-        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(currentMethod.userVerificationKey?.keyId)), `is`(false))
+        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(currentMethod.userVerificationKeys?.getUserVerificationKey()?.keyId)), `is`(false))
         // Only difference is the uv key. so copy the new key to check other fields are same
-        assertThat(methodUpdated, `is`(currentMethod.copy(userVerificationKey = methodUpdated.userVerificationKey)))
+        assertThat(methodUpdated, `is`(currentMethod.copy(userVerificationKeys = methodUpdated.userVerificationKeys)))
     }
 
     @Test
@@ -789,6 +790,7 @@ class PushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -819,6 +821,7 @@ class PushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -849,6 +852,7 @@ class PushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -860,7 +864,7 @@ class PushAuthenticatorTest : BaseTest() {
             override fun getSignature(alias: String): Signature = throw UnrecoverableKeyException()
         }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version")) {
+        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
             signer = keySigner
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage
@@ -887,6 +891,7 @@ class PushAuthenticatorTest : BaseTest() {
                 assertThat(result.isFailure, `is`(true))
                 assertThat(result.exceptionOrNull(), instanceOf(UnrecoverableKeyException::class.java))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -898,7 +903,7 @@ class PushAuthenticatorTest : BaseTest() {
             override fun getSignature(alias: String): Signature = throw UnrecoverableKeyException()
         }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version")) {
+        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
             signer = keySigner
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage
@@ -929,6 +934,7 @@ class PushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -947,7 +953,7 @@ class PushAuthenticatorTest : BaseTest() {
             }
         }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version")) {
+        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
             signer = keySigner
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage
@@ -975,6 +981,7 @@ class PushAuthenticatorTest : BaseTest() {
                 assertThat(result.isSuccess, `is`(true))
                 assertThat(result.getOrNull(), instanceOf(UserVerification::class.java))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -986,7 +993,7 @@ class PushAuthenticatorTest : BaseTest() {
             override fun getSignature(alias: String): Signature? = null
         }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version")) {
+        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
             signer = keySigner
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage
@@ -1017,6 +1024,7 @@ class PushAuthenticatorTest : BaseTest() {
                 assertThat(completed.state.accepted, `is`(true))
                 assertThat(completed.state.throwable, `is`(nullValue()))
             }
+
             else -> Assert.fail("UserVerification remediation expected")
         }
     }
@@ -1032,7 +1040,7 @@ class PushAuthenticatorTest : BaseTest() {
                 System.currentTimeMillis()
             }
         }
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version")) {
+        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
             signer = testKeyStore.testSigner
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage
@@ -1292,7 +1300,7 @@ class PushAuthenticatorTest : BaseTest() {
             }
         }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version")) {
+        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
             signer = keySigner
             encryptionProvider = testKeyStore.encrypt
             deviceStore = testDeviceStorage

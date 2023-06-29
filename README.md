@@ -36,7 +36,7 @@ This library uses semantic versioning and follows Okta's [Library Version Policy
 
 | Version | Status |
 |---------|--------|
-| 1.0.0   | Stable |
+| 1.1.0   | Stable |
 
 
 The latest release can always be found on the [releases page][github-releases].
@@ -62,7 +62,7 @@ See the [Push Sample App] for a complete implementation.
 Add the Okta Devices SDK dependency to your build.gradle file:
 
 ```kotlin
-implementation("com.okta.devices:devices-push:1.0.0")
+implementation("com.okta.devices:devices-push:1.1.0")
 ```
 
 ## Usage
@@ -79,8 +79,9 @@ A complete integration requires your app to implement the following:
 Create the SDK object to work with your Okta authenticator configuration. Use the PushAuthenticatorBuilder to create an authenticator with your application configuration:
 
 ```kotlin
+val applicationInstallationId = sharedPreferences.getString(appInstallIdSharedPref, null) ?: UUID.randomUUID().toString()
 val authenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
-    ApplicationConfig(context, appName = "MyApp", appVersion = BuildConfig.VERSION_NAME)
+    ApplicationConfig(context, appName = "MyApp", appVersion = BuildConfig.VERSION_NAME, applicationInstallationId)
 ) {
     passphrase = encryptedSharedPreference.getString(passphraseKey, null)?.toByteArray() // Secret must be stored securely 
 }.getOrThrow()
@@ -89,6 +90,7 @@ val authenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
 If a passphrase isn't provided, then the Devices SDK data will not be encrypted. It is up to you to secure the passphrase. Please store your passphrase in a secure way: in the above example and sample
 app we use Android's [EncryptedSharedPreferences](https://developer.android.com/topic/security/data#kotlin) class.
 
+`applicationInstallationId` is used to prevent duplicate enrollments. This value must be a unique, see [Android's best practices guide guide for unique identifiers](https://developer.android.com/training/articles/user-data-ids)
 
 ### Proguard
 

@@ -39,6 +39,7 @@ import example.okta.android.sample.errors.AuthenticatorError
 import timber.log.Timber
 import java.lang.StringBuilder
 import java.net.URL
+import java.util.UUID
 
 /**
  * PushAuthenticator use cases: enable or disable push MFA, list existing push enrollment, enable or disable biometric,
@@ -61,6 +62,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
     private val manageScope = listOf("okta.myAccount.appAuthenticator.maintenance.manage")
     private val readScope = listOf("okta.myAccount.appAuthenticator.maintenance.read")
     private val passphraseSharedPref: String = "passphraseSharedPref"
+    private val appInstallIdSharedPref: String = "appInstallIdSharedPref"
     private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
         app,
         passphraseSharedPref,
@@ -73,7 +75,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
 
     // Create the PushAuthenticator and customize the DeviceLog to use timber
     private val pushAuthenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
-        ApplicationConfig(app, appName = BuildConfig.APPLICATION_ID, appVersion = BuildConfig.VERSION_NAME)
+        ApplicationConfig(app, appName = BuildConfig.APPLICATION_ID, appVersion = BuildConfig.VERSION_NAME, getApplicationInstallationId())
     ) {
         // Override the default log with Timber
         deviceLog = object : DeviceLog {
@@ -153,5 +155,9 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
 
     private fun getPassphrase(): String {
         return sharedPreferences.getString(passphraseSharedPref, null) ?: generatePassphrase()
+    }
+
+    private fun getApplicationInstallationId(): String {
+        return sharedPreferences.getString(appInstallIdSharedPref, null) ?: UUID.randomUUID().toString()
     }
 }

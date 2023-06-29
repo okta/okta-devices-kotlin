@@ -143,7 +143,7 @@ fun CommonDialog(
 ) {
     if (initialState) {
         AlertDialog(
-            modifier = Modifier,
+            modifier = modifier,
             backgroundColor = Color(Constants.CONTENT_COLOR),
             contentColor = contentColorFor(Color(Constants.CONTENT_COLOR)),
             shape = RoundedCornerShape(20.dp),
