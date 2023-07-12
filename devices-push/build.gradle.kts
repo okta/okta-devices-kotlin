@@ -65,13 +65,12 @@ dependencies {
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:${Version.kotlin}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Version.coroutine}")
-    implementation("androidx.core:core-ktx:1.10.0")
+    implementation("androidx.core:core-ktx:1.10.1")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-orgjson:0.11.5") {
         exclude(group = "org.json", module = "json") // provided by Android natively
     }
-    implementation("com.google.android.gms:play-services-basement:18.2.0")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
 
     testImplementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
@@ -82,7 +81,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Version.coroutine}")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test.ext:junit-ktx:${Version.extJunit}")
-    testImplementation("org.robolectric:robolectric:4.10.1")
+    testImplementation("org.robolectric:robolectric:4.10.3")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.10.0")
     testImplementation("io.mockk:mockk:1.13.5")
     testImplementation("org.hamcrest:hamcrest-library:2.2")

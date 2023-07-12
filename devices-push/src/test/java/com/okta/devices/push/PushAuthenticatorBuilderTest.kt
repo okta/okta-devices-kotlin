@@ -18,6 +18,7 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.okta.devices.api.model.ApplicationConfig
+import com.okta.devices.fake.util.uuid
 import com.okta.devices.push.utils.BaseTest
 import com.okta.devices.storage.AuthenticatorDatabase
 import com.okta.devices.storage.EncryptionOption
@@ -30,13 +31,13 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PushAuthenticatorBuilderTest : BaseTest() {
     private val context = ApplicationProvider.getApplicationContext<Application>()
-
+    private val applicationInstallationId = uuid()
     private val inMemoryDataStore = AuthenticatorDatabase.instance(context, EncryptionOption.None, true)
 
     @Test
     fun `create push authenticator, expect push authenticator returned`() {
         // arrange
-        val appConfig = ApplicationConfig(context, "MyApp", "1.0.0")
+        val appConfig = ApplicationConfig(context, "MyApp", "1.0.0", applicationInstallationId)
 
         // act
         val pushAuthenticator = PushAuthenticatorBuilder.create(appConfig) {

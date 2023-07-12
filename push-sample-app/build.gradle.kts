@@ -73,10 +73,10 @@ dependencies {
     implementation("com.okta.kotlin:oauth2")
     implementation("com.okta.kotlin:web-authentication-ui")
 
-    implementation("androidx.core:core-ktx:1.10.0")
+    implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    implementation("androidx.activity:activity-compose:1.7.1")
+    implementation("androidx.activity:activity-compose:1.7.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:${Version.archLifecycleVersion}")
     implementation("androidx.compose.material:material:${Version.compose}")
     implementation("androidx.compose.ui:ui:${Version.compose}")
@@ -84,12 +84,12 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:${Version.compose}")
     implementation("androidx.compose.runtime:runtime:${Version.compose}")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1")
 
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:32.0.0"))
+    implementation(platform("com.google.firebase:firebase-bom:32.1.1"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
 }
