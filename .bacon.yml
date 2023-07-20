@@ -1,0 +1,10 @@
+test_suites:
+  - name : semgrep
+    script_path : /root/okta/okta-devices-kotlin/scripts/
+    sort_order : '0'
+    timeout : '10'
+    script_name : semgrep
+    script_env : {
+    }
+    criteria : MERGE
+    queue_name : small
