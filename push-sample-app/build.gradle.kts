@@ -10,7 +10,7 @@ plugins {
 }
 
 detekt {
-    config = files("${project.rootDir}/config/devices-detekt.yml", "${project.rootDir}/config/compose-detekt.yml")
+    config.setFrom(files("${project.rootDir}/config/devices-detekt.yml", "${project.rootDir}/config/compose-detekt.yml"))
     buildUponDefaultConfig = true
     parallel = true
 }
@@ -68,7 +68,7 @@ android {
 dependencies {
     implementation(project(":devices-push"))
 
-    implementation(platform("com.okta.kotlin:bom:1.1.3"))
+    implementation(platform("com.okta.kotlin:bom:1.1.5"))
     implementation("com.okta.kotlin:auth-foundation")
     implementation("com.okta.kotlin:oauth2")
     implementation("com.okta.kotlin:web-authentication-ui")
@@ -84,12 +84,12 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:${Version.compose}")
     implementation("androidx.compose.runtime:runtime:${Version.compose}")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:32.1.1"))
+    implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
 }

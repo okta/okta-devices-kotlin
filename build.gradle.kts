@@ -1,17 +1,36 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.android.application") version "8.0.2" apply false
-    id("com.android.library") version "8.0.2" apply false
+    id("com.android.application") version "8.1.1" apply false
+    id("com.android.library") version "8.1.1" apply false
     id("org.jetbrains.kotlin.android") version Version.kotlin apply false
-    id("org.jetbrains.dokka") version "1.8.20" apply false
+    id("org.jetbrains.dokka") version "1.9.0" apply false
     id("com.google.gms.google-services") version "4.3.15" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.7.2" apply false
-    id("org.sonarqube") version "4.2.1.3168" apply true
-    id("io.gitlab.arturbosch.detekt") version "1.23.0" apply false
+    id("org.jetbrains.kotlinx.kover") version "0.7.3" apply false
+    id("org.sonarqube") version "4.3.1.3277" apply true
+    id("io.gitlab.arturbosch.detekt") version "1.23.1" apply false
+}
+
+buildscript {
+    configurations.all {
+        resolutionStrategy {
+            force("com.fasterxml.woodstox:woodstox-core:6.5.1")
+        }
+    }
+}
+
+allprojects {
+    configurations.all {
+        resolutionStrategy {
+            force("com.squareup.okio:okio:3.5.0")
+            force("org.bouncycastle:bcprov-jdk18on:1.76")
+            force("org.json:json:20230618")
+            force("com.google.guava:guava:32.1.2-jre")
+        }
+    }
 }
 
 task<Delete>("clean") {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }
 
 sonarqube {
@@ -26,7 +45,7 @@ sonarqube {
 }
 
 val reportMerge by tasks.registering(io.gitlab.arturbosch.detekt.report.ReportMergeTask::class) {
-    output.set(rootProject.buildDir.resolve("reports/detekt/merge.xml"))
+    output.set(rootProject.layout.buildDirectory.file("reports/detekt/merge.xml"))
 }
 subprojects {
     plugins.withType(io.gitlab.arturbosch.detekt.DetektPlugin::class) {
