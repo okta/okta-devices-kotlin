@@ -1,13 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.android.application") version "8.1.1" apply false
-    id("com.android.library") version "8.1.1" apply false
+    id("com.android.application") version "8.2.0" apply false
+    id("com.android.library") version "8.2.0" apply false
     id("org.jetbrains.kotlin.android") version Version.kotlin apply false
-    id("org.jetbrains.dokka") version "1.9.0" apply false
-    id("com.google.gms.google-services") version "4.3.15" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.7.3" apply false
-    id("org.sonarqube") version "4.3.1.3277" apply true
-    id("io.gitlab.arturbosch.detekt") version "1.23.1" apply false
+    id("org.jetbrains.dokka") version "1.9.10" apply false
+    id("com.google.gms.google-services") version "4.4.0" apply false
+    id("org.jetbrains.kotlinx.kover") version "0.7.5" apply false
+    id("org.sonarqube") version "4.4.1.3373" apply true
+    id("io.gitlab.arturbosch.detekt") version "1.23.4" apply false
 }
 
 buildscript {
@@ -25,6 +25,7 @@ allprojects {
             force("org.bouncycastle:bcprov-jdk18on:1.76")
             force("org.json:json:20230618")
             force("com.google.guava:guava:32.1.2-jre")
+            force("androidx.room:room-runtime:${Version.room}")
         }
     }
 }
