@@ -5,7 +5,8 @@
    file name: kotlinx-coroutines-play-services-1.6.4.jar
    ]]></notes>
         <packageUrl regex="true">
-            ^pkg:maven/org\.jetbrains\.kotlinx/kotlinx\-coroutines\-play\-services@.*$</packageUrl>
+            ^pkg:maven/org\.jetbrains\.kotlinx/kotlinx\-coroutines\-play\-services@.*$
+        </packageUrl>
         <cve>CVE-2020-22475</cve>
     </suppress>
     <suppress>
@@ -22,7 +23,8 @@
    file name: kotlinx-coroutines-play-services-1.6.4.jar
    ]]></notes>
         <packageUrl regex="true">
-            ^pkg:maven/org\.jetbrains\.kotlinx/kotlinx\-coroutines\-play\-services@.*$</packageUrl>
+            ^pkg:maven/org\.jetbrains\.kotlinx/kotlinx\-coroutines\-play\-services@.*$
+        </packageUrl>
         <cve>CVE-2022-39349</cve>
     </suppress>
     <suppress>
@@ -30,7 +32,67 @@
    file name: datastore-preferences-core-1.0.0.jar
    ]]></notes>
         <packageUrl regex="true">
-            ^pkg:maven/org\.jetbrains\.kotlinx/kotlinx\-coroutines\-play\-services@.*$</packageUrl>
+            ^pkg:maven/org\.jetbrains\.kotlinx/kotlinx\-coroutines\-play\-services@.*$
+        </packageUrl>
         <cve>CVE-2022-39349</cve>
     </suppress>
+    <suppress>
+        <notes><![CDATA[
+   file name:sqlite-framework.jar
+   ]]></notes>
+        <packageUrl regex="true">^pkg:maven/androidx\.sqlite/sqlite\-framework@.*$</packageUrl>
+        <cve>CVE-2019-19646</cve>
+        <cve>CVE-2018-20346</cve>
+        <cve>CVE-2015-6607</cve>
+        <cve>CVE-2018-20505</cve>
+        <cve>CVE-2019-19645</cve>
+        <cve>CVE-2020-11656</cve>
+        <cve>CVE-2020-11655</cve>
+        <cve>CVE-2016-6153</cve>
+        <cve>CVE-2022-35737</cve>
+        <cve>CVE-2020-13631</cve>
+        <cve>CVE-2020-13434</cve>
+        <cve>CVE-2020-13632</cve>
+        <cve>CVE-2020-15358</cve>
+        <cve>CVE-2020-13435</cve>
+        <cve>CVE-2015-3717</cve>
+        <cve>CVE-2020-13630</cve>
+        <cve>CVE-2018-8740</cve>
+        <cve>CVE-2017-10989</cve>
+        <cve>CVE-2018-20506</cve>
+        <cve>CVE-2015-3416</cve>
+        <cve>CVE-2015-3415</cve>
+        <cve>CVE-2015-3414</cve>
+        <cve>CVE-2015-5895</cve>
+    </suppress>
+    <suppress>
+        <notes><![CDATA[
+   file name:sqlite.jar
+   ]]></notes>
+        <packageUrl regex="true">^pkg:maven/androidx\.sqlite/sqlite@.*$</packageUrl>
+        <cve>CVE-2019-19646</cve>
+        <cve>CVE-2018-20346</cve>
+        <cve>CVE-2015-6607</cve>
+        <cve>CVE-2018-20505</cve>
+        <cve>CVE-2019-19645</cve>
+        <cve>CVE-2020-11656</cve>
+        <cve>CVE-2020-11655</cve>
+        <cve>CVE-2016-6153</cve>
+        <cve>CVE-2022-35737</cve>
+        <cve>CVE-2020-13631</cve>
+        <cve>CVE-2020-13434</cve>
+        <cve>CVE-2020-13632</cve>
+        <cve>CVE-2020-15358</cve>
+        <cve>CVE-2020-13435</cve>
+        <cve>CVE-2015-3717</cve>
+        <cve>CVE-2020-13630</cve>
+        <cve>CVE-2018-8740</cve>
+        <cve>CVE-2017-10989</cve>
+        <cve>CVE-2018-20506</cve>
+        <cve>CVE-2015-3416</cve>
+        <cve>CVE-2015-3415</cve>
+        <cve>CVE-2015-3414</cve>
+        <cve>CVE-2015-5895</cve>
+    </suppress>
+
 </suppressions>
