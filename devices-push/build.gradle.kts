@@ -28,11 +28,11 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     buildTypes {
@@ -83,7 +83,7 @@ dependencies {
     testImplementation("androidx.test.ext:junit-ktx:${Version.extJunit}")
     testImplementation("org.robolectric:robolectric:4.11.1")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-    testImplementation("io.mockk:mockk:1.13.7")
+    testImplementation("io.mockk:mockk:1.13.9")
     testImplementation("org.hamcrest:hamcrest-library:2.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Version.kotlinSerialization}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-properties:${Version.kotlinSerialization}")
