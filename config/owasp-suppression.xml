@@ -64,6 +64,7 @@
         <cve>CVE-2015-3415</cve>
         <cve>CVE-2015-3414</cve>
         <cve>CVE-2015-5895</cve>
+        <cve>CVE-2023-7104</cve>
     </suppress>
     <suppress>
         <notes><![CDATA[
@@ -93,6 +94,7 @@
         <cve>CVE-2015-3415</cve>
         <cve>CVE-2015-3414</cve>
         <cve>CVE-2015-5895</cve>
+        <cve>CVE-2023-7104</cve>
     </suppress>
 
 </suppressions>
