@@ -32,3 +32,6 @@
 -dontwarn com.google.api.client.http.javanet.NetHttpTransport$Builder
 -dontwarn com.google.api.client.http.javanet.NetHttpTransport
 -dontwarn org.joda.time.Instant
+-dontwarn com.google.android.gms.safetynet.SafetyNet
+-dontwarn com.google.android.gms.safetynet.SafetyNetApi$AttestationResponse
+-dontwarn com.google.android.gms.safetynet.SafetyNetClient
