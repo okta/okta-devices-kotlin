@@ -22,7 +22,7 @@ allprojects {
     configurations.all {
         resolutionStrategy {
             force("com.squareup.okio:okio:3.5.0")
-            force("org.bouncycastle:bcprov-jdk18on:1.76")
+            force("org.bouncycastle:bcprov-jdk18on:1.78.1")
             force("org.json:json:20230618")
             force("com.google.guava:guava:32.1.2-jre")
             force("androidx.room:room-runtime:${Version.room}")
