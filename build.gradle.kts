@@ -13,7 +13,8 @@ plugins {
 buildscript {
     configurations.all {
         resolutionStrategy {
-            force("com.fasterxml.woodstox:woodstox-core:6.5.1")
+            force("com.fasterxml.woodstox:woodstox-core:6.6.1")
+            force("com.fasterxml.jackson.core:jackson-core:2.17.2")
         }
     }
 }
