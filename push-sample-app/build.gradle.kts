@@ -6,6 +6,7 @@ plugins {
     id("spotless")
     id("com.google.gms.google-services")
     id("io.gitlab.arturbosch.detekt")
+    id("org.jetbrains.kotlin.plugin.compose") version Version.kotlin
     kotlin("android")
 }
 
@@ -49,6 +50,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -59,13 +61,12 @@ android {
 
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = Version.composeCompiler
+        buildConfig = true
     }
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.0")
     implementation(project(":devices-push"))
 
     implementation(platform("com.okta.kotlin:bom:1.2.0"))
@@ -73,10 +74,10 @@ dependencies {
     implementation("com.okta.kotlin:oauth2")
     implementation("com.okta.kotlin:web-authentication-ui")
 
-    implementation("androidx.core:core-ktx:1.13.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    implementation("androidx.activity:activity-compose:1.9.0")
+    implementation("androidx.activity:activity-compose:1.9.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:${Version.archLifecycleVersion}")
     implementation("androidx.compose.material:material:${Version.compose}")
     implementation("androidx.compose.ui:ui:${Version.compose}")
@@ -84,12 +85,12 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:${Version.compose}")
     implementation("androidx.compose.runtime:runtime:${Version.compose}")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
+    implementation(platform("com.google.firebase:firebase-bom:33.2.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
 }

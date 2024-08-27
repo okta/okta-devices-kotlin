@@ -76,10 +76,10 @@ class ChallengeInformationTest : BaseTest() {
             serverKey, serverKid, issuer, authenticatorEnrollmentId, methodEnrollmentId, aud,
             iat, nbf, exp, method, transactionId, transactionType, bindingMessage, transactionTime, clientLocation, clientOs,
             riskLevel, challengeTextItems, unusualActivities, requestReferrer, appInstanceName,
-            userMediationChallenge, userVerificationChallenge, requiredSignals, requiredSignalProviders,
+            userMediationChallenge, userVerificationChallenge, emptyList(), requiredSignals, requiredSignalProviders,
             loginHint, orgId, userId
         )
-        val claims = Jwts.parserBuilder().setSigningKey(serverPubKey).build().parseClaimsJws(pushJws).body
+        val claims = Jwts.parser().verifyWith(serverPubKey).build().parseSignedClaims(pushJws).payload
 
         // act
         val challengeInfo = ChallengeInformation.parse(claims)

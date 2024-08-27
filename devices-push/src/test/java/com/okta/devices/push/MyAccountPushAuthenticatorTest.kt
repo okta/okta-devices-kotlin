@@ -277,7 +277,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         }
         assertThat(methodUpdated.userVerificationKeys, notNullValue())
         assertThat(currentMethod.userVerificationKeys, nullValue())
-        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKeys?.getUserVerificationKey()?.keyId)), `is`(true))
+        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKeys?.bioOnlyKey?.keyId)), `is`(true))
         // Only difference is the uv key. so copy the new key to check other fields are same
         assertThat(methodUpdated, `is`(currentMethod.copy(userVerificationKeys = methodUpdated.userVerificationKeys)))
     }
@@ -306,9 +306,9 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         }
         assertThat(methodUpdated.userVerificationKeys, notNullValue())
         assertThat(currentMethod.userVerificationKeys, notNullValue())
-        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKeys?.getUserVerificationKey()?.keyId)), `is`(true))
+        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKeys?.bioOnlyKey?.keyId)), `is`(true))
         // check the previous uv key is removed
-        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(currentMethod.userVerificationKeys?.getUserVerificationKey()?.keyId)), `is`(false))
+        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(currentMethod.userVerificationKeys?.bioOnlyKey?.keyId)), `is`(false))
         // Only difference is the uv key. so copy the new key to check other fields are same
         assertThat(methodUpdated, `is`(currentMethod.copy(userVerificationKeys = methodUpdated.userVerificationKeys)))
     }
@@ -338,7 +338,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         assertThat(methodUpdated.userVerificationKeys, nullValue())
         assertThat(currentMethod.userVerificationKeys, notNullValue())
         // check the key is deleted from keystore
-        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(currentMethod.userVerificationKeys?.getUserVerificationKey()?.keyId)), `is`(false))
+        assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(currentMethod.userVerificationKeys?.bioOnlyKey?.keyId)), `is`(false))
         // Only difference is the uv key. so copy the new key to check other fields are same
         assertThat(methodUpdated, `is`(currentMethod.copy(userVerificationKeys = methodUpdated.userVerificationKeys)))
     }
@@ -1589,7 +1589,7 @@ class MyAccountPushAuthenticatorTest : BaseTest() {
         val authToken = enrollment.retrieveMaintenanceToken(listOf("okta.myAccount.appAuthenticator.maintenance.manage")).getOrThrow()
 
         // assert
-        Jwts.parserBuilder().setSigningKey(testKeyStore.serverKeyPair.public).build().parse(authToken.token)
+        Jwts.parser().verifyWith(testKeyStore.serverKeyPair.public).build().parseSignedClaims(authToken.token)
     }
 
     @Test
