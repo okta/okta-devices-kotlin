@@ -1,13 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.android.application") version "8.3.2" apply false
-    id("com.android.library") version "8.3.2" apply false
+    id("com.android.application") version "8.5.2" apply false
+    id("com.android.library") version "8.5.2" apply false
     id("org.jetbrains.kotlin.android") version Version.kotlin apply false
     id("org.jetbrains.dokka") version "1.9.20" apply false
-    id("com.google.gms.google-services") version "4.4.1" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.7.6" apply false
-    id("org.sonarqube") version "4.4.1.3373" apply true
-    id("io.gitlab.arturbosch.detekt") version "1.23.5" apply false
+    id("com.google.gms.google-services") version "4.4.2" apply false
+    id("org.jetbrains.kotlinx.kover") version "0.8.3" apply false
+    id("org.sonarqube") version "5.1.0.4882" apply true
+    id("io.gitlab.arturbosch.detekt") version "1.23.6" apply false
 }
 
 buildscript {
@@ -15,6 +15,11 @@ buildscript {
         resolutionStrategy {
             force("com.fasterxml.woodstox:woodstox-core:6.6.1")
             force("com.fasterxml.jackson.core:jackson-core:2.17.2")
+            // https://issuetracker.google.com/issues/340202290
+            // AGP introduced incompatible bc versions. Forces the version that AGP uses.
+            // 1.7.1 has vulns, but these vulns are not included in the binary since this is used by buildscript
+            force("org.bouncycastle:bcprov-jdk18on:1.71")
+            force("org.bouncycastle:bcpkix-jdk18on:1.71")
         }
     }
 }
@@ -22,10 +27,10 @@ buildscript {
 allprojects {
     configurations.all {
         resolutionStrategy {
-            force("com.squareup.okio:okio:3.5.0")
+            force("com.squareup.okio:okio:3.9.0")
             force("org.bouncycastle:bcprov-jdk18on:1.78.1")
-            force("org.json:json:20230618")
-            force("com.google.guava:guava:32.1.2-jre")
+            force("org.json:json:20240303")
+            force("com.google.guava:guava:33.3.0-jre")
             force("androidx.room:room-runtime:${Version.room}")
         }
     }

@@ -24,10 +24,10 @@ android {
     defaultConfig {
         minSdk = DevicesConfig.minSdkVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "VERSION_NAME", "\"${DevicesConfig.devicesPushVersion}\"")
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -57,6 +57,7 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.0")
     api("com.okta.devices:devices-authenticator:${Version.devicesAuthenticator}")
     implementation("com.okta.devices:devices-core:${Version.devicesCore}") {
         exclude(group = "com.google.android.gms", module = "play-services-safetynet")
@@ -65,12 +66,11 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:${Version.archLifecycleVersion}")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:${Version.kotlin}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Version.coroutine}")
-    implementation("androidx.core:core-ktx:1.13.0")
-    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-orgjson:0.11.5") {
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-orgjson:0.12.6") {
         exclude(group = "org.json", module = "json") // provided by Android natively
     }
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -85,9 +85,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Version.coroutine}")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test.ext:junit-ktx:${Version.extJunit}")
-    testImplementation("org.robolectric:robolectric:4.12.1")
+    testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("org.hamcrest:hamcrest-library:2.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Version.kotlinSerialization}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-properties:${Version.kotlinSerialization}")

@@ -99,6 +99,8 @@ class PushAuthenticatorBuilder internal constructor(context: Application) {
                 else -> DiskEncryptionType.NONE
             }
         }
+
+        override fun managementHint(): String? = null
     }
 
     private val deviceKeyStore = lazy { DeviceKeyStoreImpl() }
@@ -148,7 +150,7 @@ class PushAuthenticatorBuilder internal constructor(context: Application) {
         }
 
         if (deviceStore == null) {
-            deviceStore = AuthenticatorDatabase.instance(context, passphrase?.let { EncryptionOption.SQLCipher(it) } ?: EncryptionOption.None)
+            deviceStore = AuthenticatorDatabase.instance(context, passphrase?.let { EncryptionOption.SQLCipher.create(it).getOrThrow() } ?: EncryptionOption.None)
         }
 
         return Modules(

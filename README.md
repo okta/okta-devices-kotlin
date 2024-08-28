@@ -59,10 +59,17 @@ See the [Push Sample App] for a complete implementation.
 
 ### Installation
 
-Add the Okta Devices SDK dependency to your build.gradle file:
+Add the Okta Devices SDK dependency to your build.gradle file and enable Java 8+ API desugaring support:
 
 ```kotlin
-implementation("com.okta.devices:devices-push:1.1.0")
+compileOptions {
+    isCoreLibraryDesugaringEnabled = true
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.0")
+implementation("com.okta.devices:devices-push:1.1.1")
 ```
 
 ## Usage
