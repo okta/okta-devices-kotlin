@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.android.application") version "8.5.2" apply false
-    id("com.android.library") version "8.5.2" apply false
+    id("com.android.application") version "8.6.1" apply false
+    id("com.android.library") version "8.6.1" apply false
     id("org.jetbrains.kotlin.android") version Version.kotlin apply false
     id("org.jetbrains.dokka") version "1.9.20" apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
@@ -13,7 +13,9 @@ plugins {
 buildscript {
     configurations.all {
         resolutionStrategy {
-            force("com.fasterxml.woodstox:woodstox-core:6.6.1")
+            force("com.google.protobuf:protobuf-java:3.25.5")
+            force("com.google.android.gms:play-services-basement:18.4.0")
+            force("io.netty:netty-codec-http2:4.1.108.Final")
             force("com.fasterxml.jackson.core:jackson-core:2.17.2")
             // https://issuetracker.google.com/issues/340202290
             // AGP introduced incompatible bc versions. Forces the version that AGP uses.

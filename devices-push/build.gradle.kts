@@ -57,7 +57,7 @@ android {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
     api("com.okta.devices:devices-authenticator:${Version.devicesAuthenticator}")
     implementation("com.okta.devices:devices-core:${Version.devicesCore}") {
         exclude(group = "com.google.android.gms", module = "play-services-safetynet")
