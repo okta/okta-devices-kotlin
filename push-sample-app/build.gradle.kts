@@ -85,12 +85,12 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:${Version.compose}")
     implementation("androidx.compose.runtime:runtime:${Version.compose}")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
 }

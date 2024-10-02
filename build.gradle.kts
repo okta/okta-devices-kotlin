@@ -34,6 +34,7 @@ allprojects {
             force("org.json:json:20240303")
             force("com.google.guava:guava:33.3.0-jre")
             force("androidx.room:room-runtime:${Version.room}")
+            force("com.google.android.gms:play-services-basement:18.4.0")
         }
     }
 }

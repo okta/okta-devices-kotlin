@@ -88,7 +88,7 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("org.hamcrest:hamcrest-library:2.2")
+    testImplementation("org.hamcrest:hamcrest-library:3.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Version.kotlinSerialization}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-properties:${Version.kotlinSerialization}")
 }
