@@ -1,7 +1,9 @@
+import org.gradle.kotlin.dsl.sonarqube
+
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.android.application") version "8.6.1" apply false
-    id("com.android.library") version "8.6.1" apply false
+    id("com.android.application") version "8.7.3" apply false
+    id("com.android.library") version "8.7.3" apply false
     id("org.jetbrains.kotlin.android") version Version.kotlin apply false
     id("org.jetbrains.dokka") version "1.9.20" apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
@@ -15,8 +17,9 @@ buildscript {
         resolutionStrategy {
             force("com.google.protobuf:protobuf-java:3.25.5")
             force("com.google.android.gms:play-services-basement:18.4.0")
-            force("io.netty:netty-codec-http2:4.1.108.Final")
+            force("io.netty:netty-codec-http2:4.1.115.Final")
             force("com.fasterxml.jackson.core:jackson-core:2.17.2")
+            force("commons-io:commons-io:2.18.0")
             // https://issuetracker.google.com/issues/340202290
             // AGP introduced incompatible bc versions. Forces the version that AGP uses.
             // 1.7.1 has vulns, but these vulns are not included in the binary since this is used by buildscript
@@ -29,8 +32,9 @@ buildscript {
 allprojects {
     configurations.all {
         resolutionStrategy {
+            force("commons-io:commons-io:2.18.0")
             force("com.google.protobuf:protobuf-java:3.25.5")
-            force("io.netty:netty-codec-http2:4.1.108.Final")
+            force("io.netty:netty-codec-http2:4.1.115.Final")
             force("com.squareup.okio:okio:3.9.0")
             force("org.bouncycastle:bcprov-jdk18on:1.78.1")
             force("org.json:json:20240303")
