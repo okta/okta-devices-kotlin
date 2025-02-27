@@ -34,7 +34,7 @@ allprojects {
         resolutionStrategy {
             force("commons-io:commons-io:2.18.0")
             force("com.google.protobuf:protobuf-java:3.25.5")
-            force("io.netty:netty-codec-http2:4.1.115.Final")
+            force("io.netty:netty-codec-http2:4.1.119.Final")
             force("com.squareup.okio:okio:3.9.0")
             force("org.bouncycastle:bcprov-jdk18on:1.78.1")
             force("org.json:json:20240303")
