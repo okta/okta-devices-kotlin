@@ -6,9 +6,8 @@ import java.util.Properties
  */
 object DevicesConfig {
     const val minSdkVersion = 24
-    const val compileSdkVersion = 34
-    const val targetSdkVersion = 34
-    const val buildToolsVersion = "34.0.0"
+    const val compileSdkVersion = 36
+    const val targetSdkVersion = 36
 
     const val pushSampleAppVersionCode = 1
     const val pushSampleAppVersionName = "1.0.0"
