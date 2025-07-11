@@ -18,7 +18,6 @@ detekt {
 
 android {
     compileSdk = DevicesConfig.compileSdkVersion
-    buildToolsVersion = DevicesConfig.buildToolsVersion
     namespace = "com.okta.devices.push"
 
     defaultConfig {
@@ -57,7 +56,7 @@ android {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     api("com.okta.devices:devices-authenticator:${Version.devicesAuthenticator}")
     implementation("com.okta.devices:devices-core:${Version.devicesCore}") {
         exclude(group = "com.google.android.gms", module = "play-services-safetynet")
@@ -65,9 +64,9 @@ dependencies {
     implementation("com.okta.devices:devices-storage:${Version.devicesStorage}")
 
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:${Version.archLifecycleVersion}")
-    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    implementation("androidx.biometric:biometric:1.4.0-alpha04")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Version.coroutine}")
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-ktx:1.16.0")
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-orgjson:0.12.6") {
@@ -85,9 +84,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Version.coroutine}")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test.ext:junit-ktx:${Version.extJunit}")
-    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("org.robolectric:robolectric:4.15.1")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("io.mockk:mockk:1.14.4")
     testImplementation("org.hamcrest:hamcrest-library:3.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Version.kotlinSerialization}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-properties:${Version.kotlinSerialization}")
