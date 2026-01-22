@@ -141,12 +141,14 @@ class PushAuthenticatorTest : BaseTest() {
     private val initialPolicyPath = checkNotNull(testServer.controller.uriPaths().find { it.endPoint == Endpoint.POLICY })
     private val testController: TestController = testServer.controller as TestController
 
-    private val customOkHttpClient = OkHttpClient.Builder()
-        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
-        .retryOnConnectionFailure(false)
-        .sslSocketFactory(sslConfig.sslContext.socketFactory, sslConfig.x509TrustManager)
-        .hostnameVerifier { _, _ -> true }
-        .build()
+    private val customOkHttpClient =
+        OkHttpClient
+            .Builder()
+            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+            .retryOnConnectionFailure(false)
+            .sslSocketFactory(sslConfig.sslContext.socketFactory, sslConfig.x509TrustManager)
+            .hostnameVerifier { _, _ -> true }
+            .build()
 
     companion object {
         lateinit var sslConfig: SslConfiguration
@@ -159,12 +161,13 @@ class PushAuthenticatorTest : BaseTest() {
             BaseTest.beforeClass()
             testKeyStore = FakeKeyStore()
             sslConfig = FakeHttpsConfiguration(isRobolectric = isRobolectric()).configureHttps()
-            testServer = runBlocking {
-                TestServerBuilder.build(CoroutineScope(Dispatchers.Default)) {
-                    keyStore = testKeyStore
-                    sslConfiguration = sslConfig
+            testServer =
+                runBlocking {
+                    TestServerBuilder.build(CoroutineScope(Dispatchers.Default)) {
+                        keyStore = testKeyStore
+                        sslConfiguration = sslConfig
+                    }
                 }
-            }
         }
 
         @AfterClass
@@ -181,19 +184,22 @@ class PushAuthenticatorTest : BaseTest() {
         testScope = TestScope(Job() + testDispatcher)
         testDeviceStorage = TestDeviceStore(AuthenticatorDatabase.instance(context, EncryptionOption.None, true))
         testController.idpService.setSupportedTransactionTypes(listOf(LOGIN, CIBA))
-        authenticator = PushAuthenticatorBuilder.create(
-            ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)
-        ) {
-            signer = testKeyStore.testSigner
-            encryptionProvider = testKeyStore.encrypt
-            deviceStore = testDeviceStorage
-            coroutineScope = testScope
-            deviceLog = object : DeviceLog {
-                override fun shouldDebugLog(): Boolean = true
-            }
-            okHttpClient = customOkHttpClient
-            useMyAccount = false
-        }.getOrThrow()
+        authenticator =
+            PushAuthenticatorBuilder
+                .create(
+                    ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)
+                ) {
+                    signer = testKeyStore.testSigner
+                    encryptionProvider = testKeyStore.encrypt
+                    deviceStore = testDeviceStorage
+                    coroutineScope = testScope
+                    deviceLog =
+                        object : DeviceLog {
+                            override fun shouldDebugLog(): Boolean = true
+                        }
+                    okHttpClient = customOkHttpClient
+                    useMyAccount = false
+                }.getOrThrow()
     }
 
     override fun tearDown() {
@@ -224,12 +230,13 @@ class PushAuthenticatorTest : BaseTest() {
     @Test
     fun `enroll with expired token expect invalid token failure`() = runTest {
         // arrange
-        val authToken = AuthToken.Bearer(
-            createAuthorizationJwt(
-                serverKey,
-                iat = Instant.now().minus(1, ChronoUnit.DAYS).toEpochMilli() // expired
+        val authToken =
+            AuthToken.Bearer(
+                createAuthorizationJwt(
+                    serverKey,
+                    iat = Instant.now().minus(1, ChronoUnit.DAYS).toEpochMilli() // expired
+                )
             )
-        )
 
         // act
         val result = authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid())))
@@ -245,13 +252,19 @@ class PushAuthenticatorTest : BaseTest() {
     fun `call set enable user verification, expect user verification enabled`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
-        }
-        val currentMethod = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
+            }
+        val currentMethod =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
 
         // act
         val result = runBlocking { enrollment.setUserVerification(authToken, enable = true) }
@@ -259,10 +272,15 @@ class PushAuthenticatorTest : BaseTest() {
         // assert
         assertThat(result.getOrThrow(), `is`(true))
         testScope.advanceUntilIdle()
-        val methodUpdated = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
+        val methodUpdated =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
         assertThat(methodUpdated.userVerificationKeys, notNullValue())
         assertThat(currentMethod.userVerificationKeys, nullValue())
         assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKeys?.bioOnlyKey?.keyId)), `is`(true))
@@ -274,13 +292,19 @@ class PushAuthenticatorTest : BaseTest() {
     fun `enable user verification on existing uv enabled enrollment, expect user verification replaced`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
-        }
-        val currentMethod = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+            }
+        val currentMethod =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
 
         // act
         val result = runBlocking { enrollment.setUserVerification(authToken, enable = true) }
@@ -288,10 +312,15 @@ class PushAuthenticatorTest : BaseTest() {
         // assert
         assertThat(result.getOrThrow(), `is`(true))
         testScope.advanceUntilIdle()
-        val methodUpdated = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
+        val methodUpdated =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
         assertThat(methodUpdated.userVerificationKeys, notNullValue())
         assertThat(currentMethod.userVerificationKeys, notNullValue())
         assertThat(testKeyStore.testSigner.deviceKeyStore.containsAlias(checkNotNull(methodUpdated.userVerificationKeys?.bioOnlyKey?.keyId)), `is`(true))
@@ -305,13 +334,19 @@ class PushAuthenticatorTest : BaseTest() {
     fun `call set disable user verification, expect user verification disable`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
-        }
-        val currentMethod = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+            }
+        val currentMethod =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
 
         // act
         val result = runBlocking { enrollment.setUserVerification(authToken, enable = false) }
@@ -319,10 +354,15 @@ class PushAuthenticatorTest : BaseTest() {
         // assert
         assertThat(result.getOrThrow(), `is`(true))
         testScope.advanceUntilIdle()
-        val methodUpdated = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
+        val methodUpdated =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
         assertThat(methodUpdated.userVerificationKeys, nullValue())
         assertThat(currentMethod.userVerificationKeys, notNullValue())
         // check the key is deleted from keystore
@@ -336,9 +376,10 @@ class PushAuthenticatorTest : BaseTest() {
         // arrange
         val userId = uuid()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey, userId = userId))
-        val authenticatorEnrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
-        }
+        val authenticatorEnrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
+            }
 
         // act
         val result = runBlocking { authenticator.delete(authToken, authenticatorEnrollment).getOrThrow() }
@@ -355,9 +396,10 @@ class PushAuthenticatorTest : BaseTest() {
         // arrange
         val userId = uuid()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey, userId = userId))
-        val authenticatorEnrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
-        }
+        val authenticatorEnrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
+            }
 
         // act
         val result = runBlocking { authenticatorEnrollment.deleteFromDevice().getOrThrow() }
@@ -395,10 +437,11 @@ class PushAuthenticatorTest : BaseTest() {
                 val policyGenerator = PolicyGenerator(testServer.url)
                 val settingsActive = policyGenerator.createAuthenticatorSetting(oidcClientId = oidcClientId, userVerification = SettingRequirement.REQUIRED)
                 val settingsInActive = policyGenerator.createAuthenticatorSetting(oidcClientId = oidcClientId, userVerification = SettingRequirement.UNKNOWN)
-                val policyList = listOf(
-                    policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settingsActive),
-                    policyGenerator.createAuthenticatorPolicy(uuid(), key, INACTIVE, settings = settingsInActive)
-                )
+                val policyList =
+                    listOf(
+                        policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settingsActive),
+                        policyGenerator.createAuthenticatorPolicy(uuid(), key, INACTIVE, settings = settingsInActive)
+                    )
                 MockResponse().setBody(testSerializer.encodeToString(ListSerializer(serializer()), policyList))
             } ?: MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
         }.getOrElse { it.mockErrorResponse() }
@@ -425,10 +468,11 @@ class PushAuthenticatorTest : BaseTest() {
                 val key = checkNotNull(request.requestUrl?.queryParameter("key"))
                 val policyGenerator = PolicyGenerator(testServer.url)
                 val settings = policyGenerator.createAuthenticatorSetting(oidcClientId = oidcClientId)
-                val policyList = listOf(
-                    policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settings),
-                    policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settings)
-                )
+                val policyList =
+                    listOf(
+                        policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settings),
+                        policyGenerator.createAuthenticatorPolicy(uuid(), key, ACTIVE, settings = settings)
+                    )
                 MockResponse().setBody(testSerializer.encodeToString(ListSerializer(serializer()), policyList))
             } ?: MockResponse().setResponseCode(HTTP_UNAUTHORIZED)
         }.getOrElse { it.mockErrorResponse() }
@@ -454,14 +498,24 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollment1 = runBlocking { authenticator.enroll(authToken1, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow() }
         val enrollment2 = runBlocking { authenticator.enroll(authToken2, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow() }
 
-        val currentMethodForEnrollment1 = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment1.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
-        val currentMethodForEnrollment2 = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment2.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
+        val currentMethodForEnrollment1 =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment1.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
+        val currentMethodForEnrollment2 =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment2.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
 
         val initialPushTokenForEnrollment1 = checkNotNull(currentMethodForEnrollment1.pushToken)
         val initialPushTokenForEnrollment2 = checkNotNull(currentMethodForEnrollment2.pushToken)
@@ -477,14 +531,24 @@ class PushAuthenticatorTest : BaseTest() {
         assertThat(result2.getOrThrow(), `is`(updatedRegistrationToken))
 
         testScope.advanceUntilIdle()
-        val methodUpdated1 = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment1.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
-        val methodUpdated2 = runBlocking {
-            testDeviceStorage.accountInformationStore().getByUserId(enrollment2.user().id).first()
-                .methodInformation.first { PUSH.isEqual(it.methodType) }
-        }
+        val methodUpdated1 =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment1.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
+        val methodUpdated2 =
+            runBlocking {
+                testDeviceStorage
+                    .accountInformationStore()
+                    .getByUserId(enrollment2.user().id)
+                    .first()
+                    .methodInformation
+                    .first { PUSH.isEqual(it.methodType) }
+            }
         // Only difference is the registration token. so copy the new registration token to check other fields are same
         assertThat(methodUpdated1, `is`(currentMethodForEnrollment1.copy(pushToken = updatedRegistrationToken)))
         assertThat(methodUpdated2, `is`(currentMethodForEnrollment2.copy(pushToken = updatedRegistrationToken)))
@@ -494,9 +558,10 @@ class PushAuthenticatorTest : BaseTest() {
     fun `call parse expect parsed push challenge returned`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
+            }
         val transactionTime: String = Date(System.currentTimeMillis()).toString()
         val pushMessage = createPushJws(enrollment, transactionTime = transactionTime)
 
@@ -554,35 +619,38 @@ class PushAuthenticatorTest : BaseTest() {
     fun `retrieve pending challenges with expired challenge expect only valid challenge returned`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
+            }
         val transactionId = uuid()
         val transactionIdInvalid = uuid()
         val accountInfo = runBlocking { testDeviceStorage.accountInformationStore().getByUserId(enrollment.user().id).first() }
         val enrollmentId = accountInfo.enrollmentInformation.enrollmentId
         val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
-        val validChallenge = createIdxPushJws(
-            serverKey,
-            serverKid,
-            testServer.url,
-            enrollmentId,
-            method.methodId,
-            transactionId = transactionId,
-            aud = oidcClientId
-        )
+        val validChallenge =
+            createIdxPushJws(
+                serverKey,
+                serverKid,
+                testServer.url,
+                enrollmentId,
+                method.methodId,
+                transactionId = transactionId,
+                aud = oidcClientId
+            )
         testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, validChallenge).toJsonArray())
 
-        val expiredChallenge = createIdxPushJws(
-            serverKey,
-            serverKid,
-            testServer.url,
-            enrollmentId,
-            method.methodId,
-            transactionId = transactionIdInvalid,
-            iat = Instant.now().minus(1, ChronoUnit.DAYS).toEpochMilli(), // expired yesterday
-            aud = oidcClientId
-        )
+        val expiredChallenge =
+            createIdxPushJws(
+                serverKey,
+                serverKid,
+                testServer.url,
+                enrollmentId,
+                method.methodId,
+                transactionId = transactionIdInvalid,
+                iat = Instant.now().minus(1, ChronoUnit.DAYS).toEpochMilli(), // expired yesterday
+                aud = oidcClientId
+            )
         testController.idpService.addChallenge(Transaction(transactionIdInvalid, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, expiredChallenge).toJsonArray())
 
         // act
@@ -599,9 +667,10 @@ class PushAuthenticatorTest : BaseTest() {
     fun `call retrievePushChallenges expect list of challenges returned`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
+            }
         val transactionId = uuid()
         val firstChallenge = createPushJws(enrollment, transactionId)
 
@@ -638,15 +707,16 @@ class PushAuthenticatorTest : BaseTest() {
         val methodForEnrollment1 = accountInfo1.methodInformation.first { PUSH.isEqual(it.methodType) }
         val methodForEnrollment2 = accountInfo2.methodInformation.first { PUSH.isEqual(it.methodType) }
 
-        val challenge1ForEnrollment1 = createIdxPushJws(
-            serverKey,
-            serverKid,
-            testServer.url,
-            enrollmentId1,
-            methodForEnrollment1.methodId,
-            transactionId = transactionId1ForEnrollment1,
-            aud = oidcClientId
-        )
+        val challenge1ForEnrollment1 =
+            createIdxPushJws(
+                serverKey,
+                serverKid,
+                testServer.url,
+                enrollmentId1,
+                methodForEnrollment1.methodId,
+                transactionId = transactionId1ForEnrollment1,
+                aud = oidcClientId
+            )
         testController.idpService.addChallenge(
             Transaction(
                 transactionId1ForEnrollment1,
@@ -657,15 +727,16 @@ class PushAuthenticatorTest : BaseTest() {
             ).toJsonArray()
         )
 
-        val challenge2ForEnrollment1 = createIdxPushJws(
-            serverKey,
-            serverKid,
-            testServer.url,
-            enrollmentId1,
-            methodForEnrollment1.methodId,
-            transactionId = transactionId2ForEnrollment1,
-            aud = oidcClientId
-        )
+        val challenge2ForEnrollment1 =
+            createIdxPushJws(
+                serverKey,
+                serverKid,
+                testServer.url,
+                enrollmentId1,
+                methodForEnrollment1.methodId,
+                transactionId = transactionId2ForEnrollment1,
+                aud = oidcClientId
+            )
         testController.idpService.addChallenge(
             Transaction(
                 transactionId2ForEnrollment1,
@@ -676,15 +747,16 @@ class PushAuthenticatorTest : BaseTest() {
             ).toJsonArray()
         )
 
-        val challenge1ForEnrollment2 = createIdxPushJws(
-            serverKey,
-            serverKid,
-            testServer.url,
-            enrollmentId2,
-            methodForEnrollment2.methodId,
-            transactionId = transactionId1ForEnrollment2,
-            aud = oidcClientId
-        )
+        val challenge1ForEnrollment2 =
+            createIdxPushJws(
+                serverKey,
+                serverKid,
+                testServer.url,
+                enrollmentId2,
+                methodForEnrollment2.methodId,
+                transactionId = transactionId1ForEnrollment2,
+                aud = oidcClientId
+            )
         testController.idpService.addChallenge(
             Transaction(
                 transactionId1ForEnrollment2,
@@ -695,15 +767,16 @@ class PushAuthenticatorTest : BaseTest() {
             ).toJsonArray()
         )
 
-        val challenge2ForEnrollment2 = createIdxPushJws(
-            serverKey,
-            serverKid,
-            testServer.url,
-            enrollmentId2,
-            methodForEnrollment2.methodId,
-            transactionId = transactionId2ForEnrollment2,
-            aud = oidcClientId
-        )
+        val challenge2ForEnrollment2 =
+            createIdxPushJws(
+                serverKey,
+                serverKid,
+                testServer.url,
+                enrollmentId2,
+                methodForEnrollment2.methodId,
+                transactionId = transactionId2ForEnrollment2,
+                aud = oidcClientId
+            )
         testController.idpService.addChallenge(
             Transaction(
                 transactionId2ForEnrollment2,
@@ -737,18 +810,22 @@ class PushAuthenticatorTest : BaseTest() {
     fun `call challenge resolve to accept push, expect successful complete status`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()))).getOrThrow()
+            }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, transactionId)
 
         // ux handling
-        val userInteraction = object : RemediationHandler.UserInteraction {
-            override fun confirm(challenge: Challenge): Boolean = true // accept
-            override fun userVerification(challenge: Challenge): AuthenticationResult? = null
-            override fun fixUserVerificationError(securityError: DeviceAuthenticatorError.SecurityError): Boolean = true
-        }
+        val userInteraction =
+            object : RemediationHandler.UserInteraction {
+                override fun confirm(challenge: Challenge): Boolean = true // accept
+
+                override fun userVerification(challenge: Challenge): AuthenticationResult? = null
+
+                override fun fixUserVerificationError(securityError: DeviceAuthenticatorError.SecurityError): Boolean = true
+            }
         val handler = RemediationHandler(userInteraction)
 
         // sign in
@@ -768,9 +845,10 @@ class PushAuthenticatorTest : BaseTest() {
     fun `call challenge resolve to accept cancel UV then accept consent, expect successful complete status`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+            }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, transactionId, userVerificationChallenge = REQUIRED)
 
@@ -799,9 +877,10 @@ class PushAuthenticatorTest : BaseTest() {
     fun `call challenge resolve when biometric is locked then accept consent, expect successful complete status`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+            }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, transactionId, userVerificationChallenge = REQUIRED)
 
@@ -830,9 +909,10 @@ class PushAuthenticatorTest : BaseTest() {
     fun `call challenge resolve when biometric is removed then accept consent, expect successful complete status`() {
         // arrange
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+            }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, transactionId, userVerificationChallenge = REQUIRED)
 
@@ -860,21 +940,25 @@ class PushAuthenticatorTest : BaseTest() {
     @Test
     fun `remediate unrecoverable UV then resolve without consent on failure, expect unrecoverable key returned`() {
         // arrange
-        val keySigner: SignatureProvider = object : SignatureProvider by testKeyStore.testSigner {
-            override fun getSignature(alias: String): Signature = throw UnrecoverableKeyException()
-        }
+        val keySigner: SignatureProvider =
+            object : SignatureProvider by testKeyStore.testSigner {
+                override fun getSignature(alias: String): Signature = throw UnrecoverableKeyException()
+            }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
-            signer = keySigner
-            encryptionProvider = testKeyStore.encrypt
-            deviceStore = testDeviceStorage
-            coroutineScope = testScope
-            okHttpClient = customOkHttpClient
-        }.getOrThrow()
+        val authenticator =
+            PushAuthenticatorBuilder
+                .create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
+                    signer = keySigner
+                    encryptionProvider = testKeyStore.encrypt
+                    deviceStore = testDeviceStorage
+                    coroutineScope = testScope
+                    okHttpClient = customOkHttpClient
+                }.getOrThrow()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+            }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, transactionId, userVerificationChallenge = REQUIRED)
 
@@ -899,22 +983,26 @@ class PushAuthenticatorTest : BaseTest() {
     @Test
     fun `remediate unrecoverable UV then resolve with consent on failure, expect user consent returned`() {
         // arrange
-        val keySigner: SignatureProvider = object : SignatureProvider by testKeyStore.testSigner {
-            override fun getSignature(alias: String): Signature = throw UnrecoverableKeyException()
-        }
+        val keySigner: SignatureProvider =
+            object : SignatureProvider by testKeyStore.testSigner {
+                override fun getSignature(alias: String): Signature = throw UnrecoverableKeyException()
+            }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
-            signer = keySigner
-            encryptionProvider = testKeyStore.encrypt
-            deviceStore = testDeviceStorage
-            coroutineScope = testScope
-            okHttpClient = customOkHttpClient
-            useMyAccount = false
-        }.getOrThrow()
+        val authenticator =
+            PushAuthenticatorBuilder
+                .create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
+                    signer = keySigner
+                    encryptionProvider = testKeyStore.encrypt
+                    deviceStore = testDeviceStorage
+                    coroutineScope = testScope
+                    okHttpClient = customOkHttpClient
+                    useMyAccount = false
+                }.getOrThrow()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+            }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, transactionId, userVerificationChallenge = REQUIRED)
 
@@ -943,27 +1031,31 @@ class PushAuthenticatorTest : BaseTest() {
     fun `remediate unrecoverable UV then repair, expect resolve to return UserVerification`() {
         // arrange
         var repairedUv = false
-        val keySigner: SignatureProvider = object : SignatureProvider by testKeyStore.testSigner {
-            override fun getSignature(alias: String): Signature? {
-                if (repairedUv) {
-                    return testKeyStore.testSigner.getSignature(alias)
-                } else {
-                    throw UnrecoverableKeyException()
+        val keySigner: SignatureProvider =
+            object : SignatureProvider by testKeyStore.testSigner {
+                override fun getSignature(alias: String): Signature? {
+                    if (repairedUv) {
+                        return testKeyStore.testSigner.getSignature(alias)
+                    } else {
+                        throw UnrecoverableKeyException()
+                    }
                 }
             }
-        }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
-            signer = keySigner
-            encryptionProvider = testKeyStore.encrypt
-            deviceStore = testDeviceStorage
-            coroutineScope = testScope
-            okHttpClient = customOkHttpClient
-        }.getOrThrow()
+        val authenticator =
+            PushAuthenticatorBuilder
+                .create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
+                    signer = keySigner
+                    encryptionProvider = testKeyStore.encrypt
+                    deviceStore = testDeviceStorage
+                    coroutineScope = testScope
+                    okHttpClient = customOkHttpClient
+                }.getOrThrow()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+            }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, transactionId, userVerificationChallenge = REQUIRED)
 
@@ -989,22 +1081,26 @@ class PushAuthenticatorTest : BaseTest() {
     @Test
     fun `remediate enrollment without UV but UV is required expect user verification error and resolve with user consent`() {
         // arrange
-        val keySigner: SignatureProvider = object : SignatureProvider by testKeyStore.testSigner {
-            override fun getSignature(alias: String): Signature? = null
-        }
+        val keySigner: SignatureProvider =
+            object : SignatureProvider by testKeyStore.testSigner {
+                override fun getSignature(alias: String): Signature? = null
+            }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
-            signer = keySigner
-            encryptionProvider = testKeyStore.encrypt
-            deviceStore = testDeviceStorage
-            coroutineScope = testScope
-            okHttpClient = customOkHttpClient
-            useMyAccount = false
-        }.getOrThrow()
+        val authenticator =
+            PushAuthenticatorBuilder
+                .create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
+                    signer = keySigner
+                    encryptionProvider = testKeyStore.encrypt
+                    deviceStore = testDeviceStorage
+                    coroutineScope = testScope
+                    okHttpClient = customOkHttpClient
+                    useMyAccount = false
+                }.getOrThrow()
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = false)).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = false)).getOrThrow()
+            }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, transactionId, userVerificationChallenge = REQUIRED)
 
@@ -1033,26 +1129,30 @@ class PushAuthenticatorTest : BaseTest() {
     fun `remediate with expired token expect security error with invalid token returned`() {
         // arrange
         var invalidTime = false
-        val time = DeviceClock {
-            if (invalidTime) {
-                Instant.now().plus(1, ChronoUnit.DAYS).toEpochMilli() // expired
-            } else {
-                System.currentTimeMillis()
+        val time =
+            DeviceClock {
+                if (invalidTime) {
+                    Instant.now().plus(1, ChronoUnit.DAYS).toEpochMilli() // expired
+                } else {
+                    System.currentTimeMillis()
+                }
             }
-        }
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
-            signer = testKeyStore.testSigner
-            encryptionProvider = testKeyStore.encrypt
-            deviceStore = testDeviceStorage
-            coroutineScope = testScope
-            deviceClock = time
-            okHttpClient = customOkHttpClient
-        }.getOrThrow()
+        val authenticator =
+            PushAuthenticatorBuilder
+                .create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
+                    signer = testKeyStore.testSigner
+                    encryptionProvider = testKeyStore.encrypt
+                    deviceStore = testDeviceStorage
+                    coroutineScope = testScope
+                    deviceClock = time
+                    okHttpClient = customOkHttpClient
+                }.getOrThrow()
 
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
-        val enrollment = runBlocking {
-            authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
-        }
+        val enrollment =
+            runBlocking {
+                authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow()
+            }
         val transactionId = uuid()
         val pushChallengeJws = createPushJws(enrollment, transactionId, userVerificationChallenge = REQUIRED)
 
@@ -1076,11 +1176,14 @@ class PushAuthenticatorTest : BaseTest() {
         val pushChallengeJws = createPushJws(enrollment, transactionId)
 
         // ux handling
-        val userInteraction = object : RemediationHandler.UserInteraction {
-            override fun confirm(challenge: Challenge): Boolean = false // deny
-            override fun userVerification(challenge: Challenge): AuthenticationResult? = null
-            override fun fixUserVerificationError(securityError: DeviceAuthenticatorError.SecurityError): Boolean = true
-        }
+        val userInteraction =
+            object : RemediationHandler.UserInteraction {
+                override fun confirm(challenge: Challenge): Boolean = false // deny
+
+                override fun userVerification(challenge: Challenge): AuthenticationResult? = null
+
+                override fun fixUserVerificationError(securityError: DeviceAuthenticatorError.SecurityError): Boolean = true
+            }
         val handler = RemediationHandler(userInteraction)
         // sign in
         testController.idpService.addChallenge(Transaction(transactionId, enrollment.user().id, enrollment.enrollmentId(), oidcClientId, pushChallengeJws).toJsonArray())
@@ -1152,7 +1255,14 @@ class PushAuthenticatorTest : BaseTest() {
         val pushJws = createPushJws(enrollment, userVerificationChallenge = UserVerificationChallenge.NONE)
 
         // act
-        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation =
+            runBlocking {
+                authenticator
+                    .parseChallenge(pushJws)
+                    .getOrThrow()
+                    .resolve()
+                    .getOrThrow()
+            }
 
         // assert
         assertThat(remediation, instanceOf(UserConsent::class.java))
@@ -1166,7 +1276,14 @@ class PushAuthenticatorTest : BaseTest() {
         val pushJws = createPushJws(enrollment, userVerificationChallenge = UserVerificationChallenge.NONE)
 
         // act
-        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation =
+            runBlocking {
+                authenticator
+                    .parseChallenge(pushJws)
+                    .getOrThrow()
+                    .resolve()
+                    .getOrThrow()
+            }
 
         // assert
         assertThat(remediation, instanceOf(UserConsent::class.java))
@@ -1182,7 +1299,14 @@ class PushAuthenticatorTest : BaseTest() {
             createPushJws(enrollment, userVerificationChallenge = UserVerificationChallenge.NONE, transactionType = TransactionType.CIBA, bindingMessage = testBindingMessage)
 
         // act
-        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation =
+            runBlocking {
+                authenticator
+                    .parseChallenge(pushJws)
+                    .getOrThrow()
+                    .resolve()
+                    .getOrThrow()
+            }
 
         // assert
         assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
@@ -1199,7 +1323,14 @@ class PushAuthenticatorTest : BaseTest() {
             createPushJws(enrollment, userVerificationChallenge = UserVerificationChallenge.NONE, transactionType = TransactionType.CIBA, bindingMessage = testBindingMessage)
 
         // act
-        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation =
+            runBlocking {
+                authenticator
+                    .parseChallenge(pushJws)
+                    .getOrThrow()
+                    .resolve()
+                    .getOrThrow()
+            }
 
         // assert
         assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
@@ -1214,7 +1345,14 @@ class PushAuthenticatorTest : BaseTest() {
         val pushJws = createPushJws(enrollment, userVerificationChallenge = UserVerificationChallenge.PREFERRED)
 
         // act
-        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation =
+            runBlocking {
+                authenticator
+                    .parseChallenge(pushJws)
+                    .getOrThrow()
+                    .resolve()
+                    .getOrThrow()
+            }
 
         // assert
         assertThat(remediation, instanceOf(UserVerification::class.java))
@@ -1235,7 +1373,14 @@ class PushAuthenticatorTest : BaseTest() {
         val pushJws = createPushJws(enrollment, userVerificationChallenge = UserVerificationChallenge.PREFERRED)
 
         // act
-        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation =
+            runBlocking {
+                authenticator
+                    .parseChallenge(pushJws)
+                    .getOrThrow()
+                    .resolve()
+                    .getOrThrow()
+            }
 
         // assert
         assertThat(remediation, instanceOf(UserConsent::class.java))
@@ -1247,15 +1392,22 @@ class PushAuthenticatorTest : BaseTest() {
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = false, enableCiba = true)).getOrThrow() }
         val testBindingMessage = uuid()
-        val pushJws = createPushJws(
-            enrollment,
-
-            userVerificationChallenge = UserVerificationChallenge.PREFERRED,
-            transactionType = TransactionType.CIBA,
-            bindingMessage = testBindingMessage
-        )
+        val pushJws =
+            createPushJws(
+                enrollment,
+                userVerificationChallenge = UserVerificationChallenge.PREFERRED,
+                transactionType = TransactionType.CIBA,
+                bindingMessage = testBindingMessage
+            )
         // act
-        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation =
+            runBlocking {
+                authenticator
+                    .parseChallenge(pushJws)
+                    .getOrThrow()
+                    .resolve()
+                    .getOrThrow()
+            }
 
         // assert
         assertThat(remediation, instanceOf(PushRemediation.CibaConsent::class.java))
@@ -1270,7 +1422,14 @@ class PushAuthenticatorTest : BaseTest() {
         val pushJws = createPushJws(enrollment, userVerificationChallenge = REQUIRED)
 
         // act
-        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation =
+            runBlocking {
+                authenticator
+                    .parseChallenge(pushJws)
+                    .getOrThrow()
+                    .resolve()
+                    .getOrThrow()
+            }
 
         // assert
         assertThat(remediation, instanceOf(UserVerification::class.java))
@@ -1284,7 +1443,14 @@ class PushAuthenticatorTest : BaseTest() {
         val pushJws = createPushJws(enrollment, userVerificationChallenge = REQUIRED)
 
         // act
-        val remediation = runBlocking { authenticator.parseChallenge(pushJws).getOrThrow().resolve().getOrThrow() }
+        val remediation =
+            runBlocking {
+                authenticator
+                    .parseChallenge(pushJws)
+                    .getOrThrow()
+                    .resolve()
+                    .getOrThrow()
+            }
 
         // assert
         assertThat(remediation, instanceOf(UserVerificationError::class.java))
@@ -1294,19 +1460,20 @@ class PushAuthenticatorTest : BaseTest() {
     @Test
     fun `resolve challenge with invalid user verification key, expect user verification error returned`() {
         // arrange
-        val keySigner: SignatureProvider = object : SignatureProvider by testKeyStore.testSigner {
-            override fun getSignature(alias: String): Signature? {
-                throw UnrecoverableKeyException()
+        val keySigner: SignatureProvider =
+            object : SignatureProvider by testKeyStore.testSigner {
+                override fun getSignature(alias: String): Signature? = throw UnrecoverableKeyException()
             }
-        }
 
-        val authenticator = PushAuthenticatorBuilder.create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
-            signer = keySigner
-            encryptionProvider = testKeyStore.encrypt
-            deviceStore = testDeviceStorage
-            coroutineScope = testScope
-            okHttpClient = customOkHttpClient
-        }.getOrThrow()
+        val authenticator =
+            PushAuthenticatorBuilder
+                .create(ApplicationConfig(getApplicationContext(), "test", "version", applicationInstallationId)) {
+                    signer = keySigner
+                    encryptionProvider = testKeyStore.encrypt
+                    deviceStore = testDeviceStorage
+                    coroutineScope = testScope
+                    okHttpClient = customOkHttpClient
+                }.getOrThrow()
 
         val authToken = AuthToken.Bearer(createAuthorizationJwt(serverKey))
         val enrollment = runBlocking { authenticator.enroll(authToken, config, EnrollmentParameters.Push(FcmToken(uuid()), enableUserVerification = true)).getOrThrow() }
@@ -1340,6 +1507,7 @@ class PushAuthenticatorTest : BaseTest() {
         // arrange
         // override default endpoint to make the localhost url as alternate
         val initialOrgPath = checkNotNull(testServer.controller.uriPaths().find { it.endPoint == Endpoint.OKTA_ORG })
+
         fun oktaOrganization(request: RecordedRequest): MockResponse = runCatching {
             val url = request.requestUrl?.run { "$scheme://$host" } ?: "https://www.okta.com"
             MockResponse().setBody(OrganizationGenerator(url).createOktaOrganization().toJson())
@@ -1381,11 +1549,14 @@ class PushAuthenticatorTest : BaseTest() {
         val pushChallengeJws2 = createPushJws(authenticatorEnrollment2, transactionId2)
 
         // ux handling
-        val userInteraction = object : RemediationHandler.UserInteraction {
-            override fun confirm(challenge: Challenge): Boolean = true // accept
-            override fun userVerification(challenge: Challenge): AuthenticationResult? = null
-            override fun fixUserVerificationError(securityError: DeviceAuthenticatorError.SecurityError): Boolean = true
-        }
+        val userInteraction =
+            object : RemediationHandler.UserInteraction {
+                override fun confirm(challenge: Challenge): Boolean = true // accept
+
+                override fun userVerification(challenge: Challenge): AuthenticationResult? = null
+
+                override fun fixUserVerificationError(securityError: DeviceAuthenticatorError.SecurityError): Boolean = true
+            }
         val handler = RemediationHandler(userInteraction)
 
         // sign in for user1 and user2
@@ -1394,10 +1565,22 @@ class PushAuthenticatorTest : BaseTest() {
         testController.idpService.addChallenge(Transaction(transactionId2, userId2, method2.enrollmentId, oidcClientId, pushChallengeJws2).toJsonArray())
 
         // act
-        val remediation1 = authenticator.allEnrollments().getOrThrow().first { it.user().id == userId1 }
-            .retrievePushChallenges(authToken1).getOrThrow().first()
-        val remediation2 = authenticator.allEnrollments().getOrThrow().first { it.user().id == userId2 }
-            .retrievePushChallenges(authToken2).getOrThrow().first()
+        val remediation1 =
+            authenticator
+                .allEnrollments()
+                .getOrThrow()
+                .first { it.user().id == userId1 }
+                .retrievePushChallenges(authToken1)
+                .getOrThrow()
+                .first()
+        val remediation2 =
+            authenticator
+                .allEnrollments()
+                .getOrThrow()
+                .first { it.user().id == userId2 }
+                .retrievePushChallenges(authToken2)
+                .getOrThrow()
+                .first()
 
         val completed1: Completed = handler.handleRemediation(remediation1.resolve().getOrThrow()).getOrThrow() as Completed
         val completed2: Completed = handler.handleRemediation(remediation2.resolve().getOrThrow()).getOrThrow() as Completed
@@ -1425,10 +1608,19 @@ class PushAuthenticatorTest : BaseTest() {
         val enrollmentId = accountInfo.enrollmentInformation.enrollmentId
         val method = accountInfo.methodInformation.first { PUSH.isEqual(it.methodType) }
         return createIdxPushJws(
-            serverKey, serverKid, testServer.url, enrollmentId, method.methodId, transactionId = transactionId,
+            serverKey,
+            serverKid,
+            testServer.url,
+            enrollmentId,
+            method.methodId,
+            transactionId = transactionId,
             transactionTime = transactionTime,
-            userMediation = UserMediationChallenge.REQUIRED, userVerification = userVerificationChallenge,
-            aud = aud, method = methodType, transactionType = transactionType, bindingMessage = bindingMessage
+            userMediation = UserMediationChallenge.REQUIRED,
+            userVerification = userVerificationChallenge,
+            aud = aud,
+            method = methodType,
+            transactionType = transactionType,
+            bindingMessage = bindingMessage
         )
     }
 }

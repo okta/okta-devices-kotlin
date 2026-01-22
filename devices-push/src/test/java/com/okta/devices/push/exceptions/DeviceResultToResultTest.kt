@@ -45,7 +45,6 @@ import java.security.GeneralSecurityException
 
 @RunWith(AndroidJUnit4::class)
 class DeviceResultToResultTest {
-
     @Test
     fun `test security result conversions, expect security error`() {
         // arrange

@@ -166,7 +166,6 @@ ij_java_space_before_catch_left_brace = true
 ij_java_space_before_catch_parentheses = true
 ij_java_space_before_class_left_brace = true
 ij_java_space_before_colon = true
-ij_java_space_before_colon_in_foreach = true
 ij_java_space_before_comma = false
 ij_java_space_before_do_left_brace = true
 ij_java_space_before_else_keyword = true
@@ -760,7 +759,7 @@ ij_groovy_while_brace_force = never
 ij_groovy_while_on_new_line = false
 ij_groovy_wrap_long_lines = false
 
-[{*.gradle.kts,*.kt,*.kts,*.main.kts}]
+[{*.kt,*.kts}]
 ij_continuation_indent_size = 4
 ij_kotlin_align_in_columns_case_branch = false
 ij_kotlin_align_multiline_binary_operation = false
@@ -841,6 +840,8 @@ ij_kotlin_while_on_new_line = false
 ij_kotlin_wrap_elvis_expressions = 1
 ij_kotlin_wrap_expression_body_functions = 1
 ij_kotlin_wrap_first_method_in_call_chain = false
+ktlint_standard_annotation = disabled
+ktlint_standard_function-naming = disabled
 
 [{*.har,*.json}]
 indent_size = 2
@@ -887,6 +888,6 @@ ij_html_uniform_ident = false
 indent_size = 2
 ij_yaml_keep_indents_on_empty_lines = false
 ij_yaml_keep_line_breaks = true
-ij_yaml_space_before_colon = true
+ij_yaml_space_before_colon = false
 ij_yaml_spaces_within_braces = true
 ij_yaml_spaces_within_brackets = true

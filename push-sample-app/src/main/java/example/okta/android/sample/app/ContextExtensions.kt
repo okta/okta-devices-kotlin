@@ -34,35 +34,40 @@ val Activity.app: MyBankApplication
     get() = applicationContext as MyBankApplication
 
 suspend fun AppCompatActivity.handleBiometric(signature: Signature?): BiometricPrompt.AuthenticationResult? = suspendCancellableCoroutine { continuation ->
-    val biometricPrompt = BiometricPrompt(
-        this,
-        Executors.newSingleThreadExecutor(),
-        object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                Timber.e("onAuthenticatorError $errorCode $errString")
-                val exception = when (errorCode) {
-                    ERROR_USER_CANCELED, ERROR_NEGATIVE_BUTTON -> BiometricError.UserCancel(errorCode, errString)
-                    BiometricPrompt.ERROR_LOCKOUT, BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> BiometricError.TemporaryUnavailable(errorCode, errString)
-                    BiometricPrompt.ERROR_NO_BIOMETRICS -> BiometricError.PermanentlyUnavailable(errorCode, errString)
-                    else -> BiometricError.Error(errorCode, errString)
+    val biometricPrompt =
+        BiometricPrompt(
+            this,
+            Executors.newSingleThreadExecutor(),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    Timber.e("onAuthenticatorError $errorCode $errString")
+                    val exception =
+                        when (errorCode) {
+                            ERROR_USER_CANCELED, ERROR_NEGATIVE_BUTTON -> BiometricError.UserCancel(errorCode, errString)
+                            BiometricPrompt.ERROR_LOCKOUT, BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> BiometricError.TemporaryUnavailable(errorCode, errString)
+                            BiometricPrompt.ERROR_NO_BIOMETRICS -> BiometricError.PermanentlyUnavailable(errorCode, errString)
+                            else -> BiometricError.Error(errorCode, errString)
+                        }
+                    continuation.resumeWithException(exception)
                 }
-                continuation.resumeWithException(exception)
-            }
 
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) = continuation.resume(result)
-            override fun onAuthenticationFailed() {
-                Timber.w("Authenticator failed")
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) = continuation.resume(result)
+
+                override fun onAuthenticationFailed() {
+                    Timber.w("Authenticator failed")
+                }
             }
-        }
-    )
+        )
 
     continuation.invokeOnCancellation { biometricPrompt.cancelAuthentication() }
 
-    val promptInfoBuilder = BiometricPrompt.PromptInfo.Builder()
-        .setTitle(getString(R.string.biometric_confirm))
-        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-        .setConfirmationRequired(true)
-        .setNegativeButtonText(getString(R.string.cancel))
+    val promptInfoBuilder =
+        BiometricPrompt.PromptInfo
+            .Builder()
+            .setTitle(getString(R.string.biometric_confirm))
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .setConfirmationRequired(true)
+            .setNegativeButtonText(getString(R.string.cancel))
 
     val promptInfo = promptInfoBuilder.build()
     signature?.run {

@@ -53,20 +53,17 @@ class ChallengeViewModel(
     private val response: UserResponse,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
-
-    class Factory(
-        private val authenticatorClient: AuthenticatorClient,
-        private val notificationId: Int,
-        private val challengeJws: String,
-        private val response: UserResponse,
-    ) : ViewModelProvider.Factory {
+    class Factory(private val authenticatorClient: AuthenticatorClient, private val notificationId: Int, private val challengeJws: String, private val response: UserResponse) :
+        ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T = ChallengeViewModel(authenticatorClient, notificationId, challengeJws, response) as T
     }
 
     sealed class State(val response: UserResponse = UserResponse.NONE) {
         object ProcessChallenge : State()
+
         class Error(val throwable: Throwable) : State()
+
         class IncomingChallenge(val remediationState: RemediationState, response: UserResponse, val previousChallengeId: Int = -1) : State(response)
     }
 
@@ -96,26 +93,26 @@ class ChallengeViewModel(
     }
 
     fun acceptOrDeny(accept: Boolean, userConsent: PushRemediation.UserConsent) = viewModelScope.launch(dispatcher) {
-        userConsent.handleAcceptOrDeny(accept)
+        userConsent
+            .handleAcceptOrDeny(accept)
             .onSuccess { challengeState -> uiStateFlow.update { State.IncomingChallenge(challengeState, response) } }
             .onFailure { onError(it) }
     }
 
     fun acceptOrDeny(accept: Boolean, cibaConsent: PushRemediation.CibaConsent) = viewModelScope.launch(dispatcher) {
-        cibaConsent.handleAcceptOrDeny(accept)
+        cibaConsent
+            .handleAcceptOrDeny(accept)
             .onSuccess { challengeState -> uiStateFlow.update { State.IncomingChallenge(challengeState, response) } }
             .onFailure { onError(it) }
     }
 
-    fun userVerification(
-        userVerification: PushRemediation.UserVerification,
-        result: BiometricPrompt.AuthenticationResult?,
-        biometricError: BiometricError? = null,
-    ) = viewModelScope.launch(dispatcher) {
-        userVerification.handleUserVerification(result, biometricError = biometricError)
-            .onSuccess { challengeState -> uiStateFlow.update { State.IncomingChallenge(challengeState, response) } }
-            .onFailure { onError(it) }
-    }
+    fun userVerification(userVerification: PushRemediation.UserVerification, result: BiometricPrompt.AuthenticationResult?, biometricError: BiometricError? = null) =
+        viewModelScope.launch(dispatcher) {
+            userVerification
+                .handleUserVerification(result, biometricError = biometricError)
+                .onSuccess { challengeState -> uiStateFlow.update { State.IncomingChallenge(challengeState, response) } }
+                .onFailure { onError(it) }
+        }
 
     fun onError(throwable: Throwable) {
         Timber.e(throwable)

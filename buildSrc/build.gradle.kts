@@ -13,6 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:7.1.0")
-    implementation("org.owasp:dependency-check-gradle:10.0.3")
+    //noinspection UseTomlInstead
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:8.1.0")
+    implementation("org.owasp:dependency-check-gradle:12.2.0")
 }

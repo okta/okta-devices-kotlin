@@ -1,3 +1,7 @@
+import com.android.build.api.dsl.LibraryExtension
+import org.gradle.kotlin.dsl.configure
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.library")
     id("owasp")
@@ -6,8 +10,7 @@ plugins {
     id("org.jetbrains.dokka")
     id("org.jetbrains.kotlinx.kover")
     id("io.gitlab.arturbosch.detekt")
-    kotlin("android")
-    kotlin("plugin.serialization") version Version.kotlin
+    kotlin("plugin.serialization") version libs.versions.kotlin.get()
 }
 
 detekt {
@@ -16,13 +19,14 @@ detekt {
     parallel = true
 }
 
-android {
+extensions.configure<LibraryExtension> {
     compileSdk = DevicesConfig.compileSdkVersion
     namespace = "com.okta.devices.push"
 
     defaultConfig {
         minSdk = DevicesConfig.minSdkVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("proguard-rules.pro")
     }
 
     compileOptions {
@@ -30,14 +34,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            consumerProguardFiles("proguard-rules.pro")
         }
     }
 
@@ -55,39 +55,46 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget(JavaVersion.VERSION_17.toString())
+    }
+}
+
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
-    api("com.okta.devices:devices-authenticator:${Version.devicesAuthenticator}")
-    implementation("com.okta.devices:devices-core:${Version.devicesCore}") {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+    api(libs.devices.authenticator)
+    implementation(libs.devices.core) {
         exclude(group = "com.google.android.gms", module = "play-services-safetynet")
     }
-    implementation("com.okta.devices:devices-storage:${Version.devicesStorage}")
+    implementation(libs.devices.storage)
 
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:${Version.archLifecycleVersion}")
-    implementation("androidx.biometric:biometric:1.4.0-alpha04")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Version.coroutine}")
-    implementation("androidx.core:core-ktx:1.16.0")
-    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-orgjson:0.12.6") {
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.biometric)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.orgjson) {
         exclude(group = "org.json", module = "json") // provided by Android natively
     }
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation(libs.okhttp)
+    implementation(libs.sqlcipher)
 
-    testImplementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    testImplementation("com.okta.devices:devices-fake-server:${Version.devicesFakeServer}") {
+    testImplementation(libs.logging.interceptor)
+    testImplementation(libs.devices.fake.server) {
         exclude(group = "com.google.android.gms", module = "play-services-safetynet")
     }
-    testImplementation("androidx.arch.core:core-testing:2.2.0")
-    testImplementation("androidx.room:room-testing:${Version.room}")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:${Version.kotlin}")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Version.coroutine}")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.test.ext:junit-ktx:${Version.extJunit}")
-    testImplementation("org.robolectric:robolectric:4.15.1")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-    testImplementation("io.mockk:mockk:1.14.4")
-    testImplementation("org.hamcrest:hamcrest-library:3.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Version.kotlinSerialization}")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-properties:${Version.kotlinSerialization}")
+    testImplementation(libs.androidx.core.testing)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.junit)
+    testImplementation(libs.androidx.junit.ktx)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.mockwebserver)
+    testImplementation(libs.mockk)
+    testImplementation(libs.hamcrest.library)
+    testImplementation(libs.kotlinx.serialization.json)
+    testImplementation(libs.kotlinx.serialization.properties)
 }

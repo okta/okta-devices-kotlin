@@ -51,20 +51,18 @@ suspend fun UserVerification.handleUserVerification(
     result: BiometricPrompt.AuthenticationResult?,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
     biometricError: BiometricError? = null,
-): Result<RemediationState> {
-    return result?.let { authenticationResult ->
-        resolve(authenticationResult)
-            .fold({ pushRemediation ->
-                // Accept since user already confirmed, we can also ask for approval.
-                if (pushRemediation is UserConsent) {
-                    withContext(dispatcher) { pushRemediation.accept().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) }) }
-                } else {
-                    Result.success(pushRemediation.remediationAsState())
-                }
-            }, { Result.failure(it) })
-    } ?: when (biometricError) {
-        is BiometricError.TemporaryUnavailable -> temporarilyUnavailable().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
-        is BiometricError.PermanentlyUnavailable -> permanentlyUnavailable().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
-        else -> cancel().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
-    }
+): Result<RemediationState> = result?.let { authenticationResult ->
+    resolve(authenticationResult)
+        .fold({ pushRemediation ->
+            // Accept since user already confirmed, we can also ask for approval.
+            if (pushRemediation is UserConsent) {
+                withContext(dispatcher) { pushRemediation.accept().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) }) }
+            } else {
+                Result.success(pushRemediation.remediationAsState())
+            }
+        }, { Result.failure(it) })
+} ?: when (biometricError) {
+    is BiometricError.TemporaryUnavailable -> temporarilyUnavailable().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+    is BiometricError.PermanentlyUnavailable -> permanentlyUnavailable().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
+    else -> cancel().fold({ Result.success(it.remediationAsState()) }, { Result.failure(it) })
 }

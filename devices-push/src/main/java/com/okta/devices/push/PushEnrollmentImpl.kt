@@ -26,17 +26,13 @@ import com.okta.devices.model.ErrorCode.EXCEPTION
 import com.okta.devices.push.api.PushChallenge
 import com.okta.devices.push.api.PushEnrollment
 
-internal class PushEnrollmentImpl(
-    private val enrollmentCore: AuthenticatorEnrollmentCore,
-    private val myAccount: Boolean = false,
-) : PushEnrollment, AuthenticatorEnrollment by AuthenticatorEnrollmentImpl(enrollmentCore, myAccount) {
-
-    override suspend fun updateRegistrationToken(authToken: AuthToken, registrationToken: RegistrationToken): Result<String> {
-        return if (myAccount) {
-            enrollmentCore.patchRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
-        } else {
-            enrollmentCore.updateRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
-        }
+internal class PushEnrollmentImpl(private val enrollmentCore: AuthenticatorEnrollmentCore, private val myAccount: Boolean = false) :
+    PushEnrollment,
+    AuthenticatorEnrollment by AuthenticatorEnrollmentImpl(enrollmentCore, myAccount) {
+    override suspend fun updateRegistrationToken(authToken: AuthToken, registrationToken: RegistrationToken): Result<String> = if (myAccount) {
+        enrollmentCore.patchRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
+    } else {
+        enrollmentCore.updateRegistrationToken(AuthorizationToken.Bearer(authToken.token), registrationToken.get())
     }
 
     override suspend fun retrievePushChallenges(authToken: AuthToken, allowedClockSkewInSeconds: Long): Result<List<PushChallenge>> =
@@ -47,7 +43,8 @@ internal class PushEnrollmentImpl(
 
     override suspend fun retrieveMaintenanceToken(scope: List<String>): Result<AuthToken> {
         if (scope.isEmpty()) return Result.failure(InternalDeviceError(EXCEPTION.value, "Empty scope", IllegalArgumentException("No scope specified")))
-        return enrollmentCore.getToken(scope.joinToString(separator = " "))
+        return enrollmentCore
+            .getToken(scope.joinToString(separator = " "))
             .fold({ Result.success(AuthToken.Bearer(it.accessToken)) }, { Result.failure(it) })
     }
 }

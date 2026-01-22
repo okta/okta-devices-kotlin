@@ -1,5 +1,6 @@
 import org.gradle.api.Project
 import java.util.Properties
+import java.io.ByteArrayOutputStream
 
 /**
  * Configuration for push-sample-app, devices-push, devices-authenticator
@@ -51,12 +52,10 @@ object DevicesConfig {
 
     private fun gitCountAndSha(project: Project): String {
         fun shell(cmd: String): String {
-            val output = java.io.ByteArrayOutputStream()
-            project.exec {
-                commandLine = cmd.split(" ")
-                standardOutput = output
-            }
-            return String(output.toByteArray()).replace(System.lineSeparator(), "")
+            val process = Runtime.getRuntime().exec(cmd)
+            val output = ByteArrayOutputStream()
+            process.inputStream.copyTo(output)
+            return output.toString().replace(System.lineSeparator(), "")
         }
         return shell("git rev-list HEAD --count") + "-" + shell("git rev-parse --short=8 HEAD")
     }

@@ -52,40 +52,49 @@ import java.util.UUID
  * @param app
  */
 class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClient) {
-    private val masterKey: MasterKey = MasterKey.Builder(app).setKeyGenParameterSpec(
-        KeyGenParameterSpec.Builder(DEFAULT_MASTER_KEY_ALIAS, PURPOSE_ENCRYPT or PURPOSE_DECRYPT)
-            .setBlockModes(BLOCK_MODE_GCM)
-            .setEncryptionPaddings(ENCRYPTION_PADDING_NONE)
-            .setKeySize(DEFAULT_AES_GCM_MASTER_KEY_SIZE).build()
-    ).build()
+    private val masterKey: MasterKey =
+        MasterKey
+            .Builder(app)
+            .setKeyGenParameterSpec(
+                KeyGenParameterSpec
+                    .Builder(DEFAULT_MASTER_KEY_ALIAS, PURPOSE_ENCRYPT or PURPOSE_DECRYPT)
+                    .setBlockModes(BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(ENCRYPTION_PADDING_NONE)
+                    .setKeySize(DEFAULT_AES_GCM_MASTER_KEY_SIZE)
+                    .build()
+            ).build()
 
     private val manageScope = listOf("okta.myAccount.appAuthenticator.maintenance.manage")
     private val readScope = listOf("okta.myAccount.appAuthenticator.maintenance.read")
     private val passphraseSharedPref: String = "passphraseSharedPref"
     private val appInstallIdSharedPref: String = "appInstallIdSharedPref"
-    private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
-        app,
-        passphraseSharedPref,
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val sharedPreferences: SharedPreferences =
+        EncryptedSharedPreferences.create(
+            app,
+            passphraseSharedPref,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
 
     private val passphraseLength: Int = 64
 
     // Create the PushAuthenticator and customize the DeviceLog to use timber
-    private val pushAuthenticator: PushAuthenticator = PushAuthenticatorBuilder.create(
-        ApplicationConfig(app, appName = BuildConfig.APPLICATION_ID, appVersion = BuildConfig.VERSION_NAME, getApplicationInstallationId())
-    ) {
-        // Override the default log with Timber
-        deviceLog = object : DeviceLog {
-            override fun println(priority: Int, tag: String, log: String, tr: Throwable?) {
-                Timber.log(priority, tag, log, tr)
-            }
-        }
-        // Enable encryption
-        passphrase = getPassphrase().toByteArray()
-    }.getOrThrow()
+    private val pushAuthenticator: PushAuthenticator =
+        PushAuthenticatorBuilder
+            .create(
+                ApplicationConfig(app, appName = BuildConfig.APPLICATION_ID, appVersion = BuildConfig.VERSION_NAME, getApplicationInstallationId())
+            ) {
+                // Override the default log with Timber
+                deviceLog =
+                    object : DeviceLog {
+                        override fun println(priority: Int, tag: String, log: String, tr: Throwable?) {
+                            Timber.log(priority, tag, log, tr)
+                        }
+                    }
+                // Enable encryption
+                passphrase = getPassphrase().toByteArray()
+            }.getOrThrow()
 
     suspend fun getEnrollment(userId: String): Result<PushEnrollment> = runCatching {
         return pushAuthenticator.allEnrollments().getOrThrow().let { authenticators ->
@@ -153,11 +162,7 @@ class AuthenticatorClient(app: Application, private val oidcClient: OktaOidcClie
         return sb.toString()
     }
 
-    private fun getPassphrase(): String {
-        return sharedPreferences.getString(passphraseSharedPref, null) ?: generatePassphrase()
-    }
+    private fun getPassphrase(): String = sharedPreferences.getString(passphraseSharedPref, null) ?: generatePassphrase()
 
-    private fun getApplicationInstallationId(): String {
-        return sharedPreferences.getString(appInstallIdSharedPref, null) ?: UUID.randomUUID().toString()
-    }
+    private fun getApplicationInstallationId(): String = sharedPreferences.getString(appInstallIdSharedPref, null) ?: UUID.randomUUID().toString()
 }

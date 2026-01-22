@@ -56,11 +56,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 @Preview
-fun MagentaBankScaffold(
-    title: String = "MagentaBank",
-    navigationIcon: @Composable (() -> Unit)? = null,
-    content: @Composable (paddingValues: PaddingValues) -> Unit = {},
-) {
+fun MagentaBankScaffold(title: String = "MagentaBank", navigationIcon: @Composable (() -> Unit)? = null, content: @Composable (paddingValues: PaddingValues) -> Unit = {}) {
     Scaffold(topBar = {
         TopAppBar(
             navigationIcon = navigationIcon,
@@ -110,12 +106,7 @@ fun LoadingState() {
 
 @Composable
 @Preview
-fun CommonButton(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {},
-    text: String = "Button",
-    positive: Boolean = true,
-) {
+fun CommonButton(modifier: Modifier = Modifier, onClick: () -> Unit = {}, text: String = "Button", positive: Boolean = true) {
     Button(
         colors = if (positive) ButtonDefaults.buttonColors() else ButtonDefaults.buttonColors(backgroundColor = Color.White),
         onClick = { onClick() },

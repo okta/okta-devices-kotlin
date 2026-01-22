@@ -16,6 +16,8 @@ package example.okta.android.sample.errors
 
 sealed class OidcError(msg: String? = null, cause: Throwable? = null) : Exception(msg, cause) {
     object NoSession : OidcError()
+
     object InvalidState : OidcError()
+
     class Error(msg: String? = null, cause: Throwable? = null) : OidcError(msg, cause)
 }

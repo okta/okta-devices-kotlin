@@ -123,7 +123,11 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
         fun resolve(consentOnFailure: Boolean = true): Result<PushRemediation> = runCatching {
             ctx.baseEnrollment.userVerificationSignature()?.run {
                 Result.success(UserVerification(challenge, ctx, this))
-            } ?: if (consentOnFailure) Result.success(ctx.challengeInformation.consentType(ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION))) else error("Unable to generate a valid signature")
+            } ?: if (consentOnFailure) {
+                Result.success(ctx.challengeInformation.consentType(ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)))
+            } else {
+                error("Unable to generate a valid signature")
+            }
         }.getOrElse {
             if (consentOnFailure) {
                 Result.success(ctx.challengeInformation.consentType(ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)))
@@ -166,11 +170,12 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          * @return [Result] if successful the next [Remediation] step will be [UserConsent]
          */
         fun temporarilyUnavailable(): Result<PushRemediation> {
-            val authedCtx = if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) {
-                ctx.copy(consentResponse = UV_TEMPORARILY_UNAVAILABLE)
-            } else {
-                ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
-            }
+            val authedCtx =
+                if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) {
+                    ctx.copy(consentResponse = UV_TEMPORARILY_UNAVAILABLE)
+                } else {
+                    ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
+                }
             return Result.success(ctx.challengeInformation.consentType(authedCtx))
         }
 
@@ -180,11 +185,12 @@ sealed class PushRemediation(override val challenge: PushChallenge, internal val
          * @return [Result] if successful the next [Remediation] step will be [UserConsent]
          */
         fun permanentlyUnavailable(): Result<PushRemediation> {
-            val authedCtx = if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) {
-                ctx.copy(consentResponse = UV_PERMANENTLY_UNAVAILABLE)
-            } else {
-                ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
-            }
+            val authedCtx =
+                if (ctx.challengeInformation.userVerificationChallenge == UserVerificationChallenge.REQUIRED) {
+                    ctx.copy(consentResponse = UV_PERMANENTLY_UNAVAILABLE)
+                } else {
+                    ctx.copy(consentResponse = CANCELLED_USER_VERIFICATION)
+                }
             return Result.success(ctx.challengeInformation.consentType(authedCtx))
         }
     }

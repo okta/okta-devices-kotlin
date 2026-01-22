@@ -60,48 +60,52 @@ class PushAuthenticatorBuilder internal constructor(context: Application) {
     internal var deviceStore: DeviceStore? = null
     internal var deviceClock: DeviceClock = DeviceClock { System.currentTimeMillis() }
     internal var coroutineScope: CoroutineScope = CoroutineScope(Job() + Dispatchers.IO)
-    internal var deviceInfoCollector: DeviceInfoCollector = object : DeviceInfoCollector {
-        private val keyguardManager = context.getSystemService(KeyguardManager::class.java)
-        private val devicePolicyManager = context.getSystemService(DevicePolicyManager::class.java)
-        private val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+    internal var deviceInfoCollector: DeviceInfoCollector =
+        object : DeviceInfoCollector {
+            private val keyguardManager = context.getSystemService(KeyguardManager::class.java)
+            private val devicePolicyManager = context.getSystemService(DevicePolicyManager::class.java)
+            private val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
 
-        override fun appVersion(): String = packageInfo?.versionName ?: Build.UNKNOWN
-        override fun appBundleId(): String = packageInfo?.applicationInfo?.packageName ?: Build.UNKNOWN
-        override fun userDefinedDeviceName(): String {
-            // Settings.Global.device_name seems to have the most success among more recent devices.
-            return Settings.Global.getString(context.contentResolver, "device_name")
-                ?: Settings.Secure.getString(context.contentResolver, "device_name")
-                // May work better for older devices.
-                ?: Settings.System.getString(context.contentResolver, "bluetooth_name")
-                ?: Settings.Secure.getString(context.contentResolver, "bluetooth_name")
-                ?: Build.MODEL
-        }
+            override fun appVersion(): String = packageInfo?.versionName ?: Build.UNKNOWN
 
-        override fun screenLockType(): ScreenLockType = when (keyguardManager?.isDeviceSecure) {
-            true -> ScreenLockType.PASSCODE
-            else -> ScreenLockType.NONE
-        }
+            override fun appBundleId(): String = packageInfo?.applicationInfo?.packageName ?: Build.UNKNOWN
 
-        override fun serialNumber(): String? = null
-
-        override fun udid(): String? = null
-
-        override fun diskEncryptionType(): DiskEncryptionType {
-            val diskEncryptionStatus = devicePolicyManager?.storageEncryptionStatus
-                ?: DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED
-            return when (diskEncryptionStatus) {
-                DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER -> DiskEncryptionType.USER
-                DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE,
-                DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_DEFAULT_KEY,
-                DevicePolicyManager.ENCRYPTION_STATUS_ACTIVATING,
-                -> DiskEncryptionType.FULL
-
-                else -> DiskEncryptionType.NONE
+            override fun userDefinedDeviceName(): String {
+                // Settings.Global.device_name seems to have the most success among more recent devices.
+                return Settings.Global.getString(context.contentResolver, "device_name")
+                    ?: Settings.Secure.getString(context.contentResolver, "device_name")
+                    // May work better for older devices.
+                    ?: Settings.System.getString(context.contentResolver, "bluetooth_name")
+                    ?: Settings.Secure.getString(context.contentResolver, "bluetooth_name")
+                    ?: Build.MODEL
             }
-        }
 
-        override fun managementHint(): String? = null
-    }
+            override fun screenLockType(): ScreenLockType = when (keyguardManager?.isDeviceSecure) {
+                true -> ScreenLockType.PASSCODE
+                else -> ScreenLockType.NONE
+            }
+
+            override fun serialNumber(): String? = null
+
+            override fun udid(): String? = null
+
+            override fun diskEncryptionType(): DiskEncryptionType {
+                val diskEncryptionStatus =
+                    devicePolicyManager?.storageEncryptionStatus
+                        ?: DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED
+                return when (diskEncryptionStatus) {
+                    DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER -> DiskEncryptionType.USER
+                    DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE,
+                    DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_DEFAULT_KEY,
+                    DevicePolicyManager.ENCRYPTION_STATUS_ACTIVATING,
+                    -> DiskEncryptionType.FULL
+
+                    else -> DiskEncryptionType.NONE
+                }
+            }
+
+            override fun managementHint(): String? = null
+        }
 
     private val deviceKeyStore = lazy { DeviceKeyStoreImpl() }
     internal var signer: SignatureProvider = RsaSignature(deviceKeyStore.value)
@@ -142,12 +146,16 @@ class PushAuthenticatorBuilder internal constructor(context: Application) {
 
     private fun build(context: Context): Modules {
         // transform to Devices SDK values
-        val cryptoFactory: CryptoFactory = object : CryptoFactory {
-            override fun getDigitalSignatureByKey(keyInfoHint: KeyInfoHint): SignatureProvider = signer
-            override fun getDigitalSignatureByOrgInfo(orgInfoHint: OrgInfoHint): SignatureProvider = signer
-            override fun getEncryptionProvideByOrgInfo(orgInfoHint: OrgInfoHint): EncryptionProvider = encryptionProvider
-            override fun getEncryptionProviderByKey(keyInfoHint: KeyInfoHint): EncryptionProvider = encryptionProvider
-        }
+        val cryptoFactory: CryptoFactory =
+            object : CryptoFactory {
+                override fun getDigitalSignatureByKey(keyInfoHint: KeyInfoHint): SignatureProvider = signer
+
+                override fun getDigitalSignatureByOrgInfo(orgInfoHint: OrgInfoHint): SignatureProvider = signer
+
+                override fun getEncryptionProvideByOrgInfo(orgInfoHint: OrgInfoHint): EncryptionProvider = encryptionProvider
+
+                override fun getEncryptionProviderByKey(keyInfoHint: KeyInfoHint): EncryptionProvider = encryptionProvider
+            }
 
         if (deviceStore == null) {
             deviceStore = AuthenticatorDatabase.instance(context, passphrase?.let { EncryptionOption.SQLCipher.create(it).getOrThrow() } ?: EncryptionOption.None)

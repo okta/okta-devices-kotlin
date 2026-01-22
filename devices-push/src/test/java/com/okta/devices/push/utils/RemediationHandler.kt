@@ -23,18 +23,21 @@ class RemediationHandler(private val userInteraction: UserInteraction) {
     // Mock the user interaction
     interface UserInteraction {
         fun confirm(challenge: Challenge): Boolean
+
         fun userVerification(challenge: Challenge): AuthenticationResult?
+
         fun fixUserVerificationError(securityError: SecurityError): Boolean
     }
 
     tailrec suspend fun handleRemediation(remediate: PushRemediation): Result<PushRemediation> {
-        val result = when (remediate) {
-            is PushRemediation.Completed -> Result.success(remediate)
-            is PushRemediation.UserConsent -> if (userInteraction.confirm(remediate.challenge)) remediate.accept() else remediate.deny()
-            is PushRemediation.CibaConsent -> if (userInteraction.confirm(remediate.challenge)) remediate.accept() else remediate.deny()
-            is PushRemediation.UserVerification -> userInteraction.userVerification(remediate.challenge)?.run { remediate.resolve(this) } ?: remediate.deny()
-            is PushRemediation.UserVerificationError -> if (userInteraction.fixUserVerificationError(remediate.securityError)) remediate.resolve() else remediate.deny()
-        }
+        val result =
+            when (remediate) {
+                is PushRemediation.Completed -> Result.success(remediate)
+                is PushRemediation.UserConsent -> if (userInteraction.confirm(remediate.challenge)) remediate.accept() else remediate.deny()
+                is PushRemediation.CibaConsent -> if (userInteraction.confirm(remediate.challenge)) remediate.accept() else remediate.deny()
+                is PushRemediation.UserVerification -> userInteraction.userVerification(remediate.challenge)?.run { remediate.resolve(this) } ?: remediate.deny()
+                is PushRemediation.UserVerificationError -> if (userInteraction.fixUserVerificationError(remediate.securityError)) remediate.resolve() else remediate.deny()
+            }
         val latestRemediation = result.getOrThrow()
         return if (latestRemediation is PushRemediation.Completed) result else handleRemediation(latestRemediation)
     }

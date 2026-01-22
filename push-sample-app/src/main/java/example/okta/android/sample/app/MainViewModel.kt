@@ -39,12 +39,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.asDeferred
 import timber.log.Timber
 
-class MainViewModel(
-    private val authenticatorClient: AuthenticatorClient,
-    private val oidcClient: OktaOidcClient,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : ViewModel() {
-
+class MainViewModel(private val authenticatorClient: AuthenticatorClient, private val oidcClient: OktaOidcClient, private val dispatcher: CoroutineDispatcher = Dispatchers.IO) : ViewModel() {
     class Factory(private val authenticatorClient: AuthenticatorClient, private val oidcClient: OktaOidcClient) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T = MainViewModel(authenticatorClient, oidcClient) as T
@@ -52,11 +47,17 @@ class MainViewModel(
 
     sealed class State {
         object Loading : State()
+
         object SignIn : State()
+
         object SignedOut : State()
+
         class SetupPush(val userStatus: UserStatus) : State()
+
         class StatusUpdate(val userStatus: UserStatus) : State()
+
         class Error(val throwable: Throwable) : State()
+
         class RemediationStatus(val remediationState: RemediationState) : State()
     }
 
@@ -72,30 +73,38 @@ class MainViewModel(
     fun refresh(checkPending: Boolean) {
         uiStateFlow.update { State.Loading }
         viewModelScope.launch(dispatcher) {
-            oidcClient.getSignedInUser().onSuccess { userStatus ->
-                authenticatorClient.getEnrollment(userStatus.userId)
-                    .onSuccess { enrollment ->
-                        uiStateFlow.update { State.StatusUpdate(userStatus.copy(pushEnabled = true, userVerification = enrollment.userVerificationEnabled(), cibaEnable = enrollment.cibaEnabled())) }
-                        if (checkPending) {
-                            authenticatorClient.retrievePendingChallenges()
-                                .onSuccess {
-                                    // If the user initiates multiple MFA attempts, retrievePushChallenges may contain multiple challenges.
-                                    // This sample is only handling the first.
-                                    it.firstOrNull()?.let { challenge ->
-                                        challenge.resolve()
-                                            .onSuccess { remediation -> uiStateFlow.update { State.RemediationStatus(remediation.remediationAsState()) } }
-                                            .onFailure { throwable -> Timber.i(throwable, "resolve pending challenge failed") }
-                                    }
-                                }.onFailure { Timber.i(it, "retrievePendingChallenges failed") }
-                        }
-                    }.onFailure { uiStateFlow.update { State.StatusUpdate(userStatus) } }
-            }.onFailure { uiStateFlow.update { State.SignIn } }
+            oidcClient
+                .getSignedInUser()
+                .onSuccess { userStatus ->
+                    authenticatorClient
+                        .getEnrollment(userStatus.userId)
+                        .onSuccess { enrollment ->
+                            uiStateFlow.update {
+                                State.StatusUpdate(userStatus.copy(pushEnabled = true, userVerification = enrollment.userVerificationEnabled(), cibaEnable = enrollment.cibaEnabled()))
+                            }
+                            if (checkPending) {
+                                authenticatorClient
+                                    .retrievePendingChallenges()
+                                    .onSuccess {
+                                        // If the user initiates multiple MFA attempts, retrievePushChallenges may contain multiple challenges.
+                                        // This sample is only handling the first.
+                                        it.firstOrNull()?.let { challenge ->
+                                            challenge
+                                                .resolve()
+                                                .onSuccess { remediation -> uiStateFlow.update { State.RemediationStatus(remediation.remediationAsState()) } }
+                                                .onFailure { throwable -> Timber.i(throwable, "resolve pending challenge failed") }
+                                        }
+                                    }.onFailure { Timber.i(it, "retrievePendingChallenges failed") }
+                            }
+                        }.onFailure { uiStateFlow.update { State.StatusUpdate(userStatus) } }
+                }.onFailure { uiStateFlow.update { State.SignIn } }
         }
     }
 
     fun signIn(activity: MainActivity) = viewModelScope.launch(dispatcher) {
         uiStateFlow.update { State.Loading }
-        oidcClient.oidcAuthenticate(activity)
+        oidcClient
+            .oidcAuthenticate(activity)
             .onSuccess { userStatus -> uiStateFlow.update { State.SetupPush(userStatus) } }
             .onFailure { onError(it) }
     }
@@ -103,8 +112,14 @@ class MainViewModel(
     fun enablePush(userStatus: UserStatus, enableUv: Boolean) = viewModelScope.launch(dispatcher) {
         uiStateFlow.update { State.Loading }
         runCatching {
-            val token = FirebaseMessaging.getInstance().token.asDeferred().await()
-            authenticatorClient.enroll(userStatus.userId, EnrollmentParameters.Push(RegistrationToken.FcmToken(token), enableUv))
+            val token =
+                FirebaseMessaging
+                    .getInstance()
+                    .token
+                    .asDeferred()
+                    .await()
+            authenticatorClient
+                .enroll(userStatus.userId, EnrollmentParameters.Push(RegistrationToken.FcmToken(token), enableUv))
                 .onSuccess { uiStateFlow.update { State.StatusUpdate(userStatus.copy(pushEnabled = true, userVerification = enableUv)) } }
                 .onFailure { onError(it) }
         }.getOrElse { onError(it) }
@@ -113,7 +128,8 @@ class MainViewModel(
     fun disablePush(userStatus: UserStatus) = viewModelScope.launch(dispatcher) {
         uiStateFlow.update { State.Loading }
         runCatching {
-            authenticatorClient.delete(userStatus.userId)
+            authenticatorClient
+                .delete(userStatus.userId)
                 .onSuccess { uiStateFlow.update { State.StatusUpdate(userStatus.copy(pushEnabled = false, userVerification = false)) } }
                 .onFailure { onError(it) }
         }
@@ -122,7 +138,8 @@ class MainViewModel(
     fun updateUserVerification(userStatus: UserStatus, enableUv: Boolean) = viewModelScope.launch(dispatcher) {
         uiStateFlow.update { State.Loading }
         runCatching {
-            authenticatorClient.updateUserVerification(enableUv, userStatus.userId)
+            authenticatorClient
+                .updateUserVerification(enableUv, userStatus.userId)
                 .onSuccess { uiStateFlow.update { State.StatusUpdate(userStatus.copy(userVerification = enableUv)) } }
                 .onFailure { onError(it) }
         }.getOrElse { onError(it) }
@@ -131,39 +148,45 @@ class MainViewModel(
     fun updateCibaTransaction(userStatus: UserStatus, enableCiba: Boolean) = viewModelScope.launch(dispatcher) {
         uiStateFlow.update { State.Loading }
         runCatching {
-            authenticatorClient.updateCibaTransaction(enableCiba, userStatus.userId)
+            authenticatorClient
+                .updateCibaTransaction(enableCiba, userStatus.userId)
                 .onSuccess { uiStateFlow.update { State.StatusUpdate(userStatus.copy(cibaEnable = enableCiba)) } }
                 .onFailure { onError(it) }
         }.getOrElse { onError(it) }
     }
 
     fun acceptOrDeny(accept: Boolean, userConsent: PushRemediation.UserConsent) = viewModelScope.launch(dispatcher) {
-        userConsent.handleAcceptOrDeny(accept)
+        userConsent
+            .handleAcceptOrDeny(accept)
             .onSuccess { remediationState -> uiStateFlow.update { State.RemediationStatus(remediationState) } }
             .onFailure { onError(it) }
     }
 
     fun acceptOrDeny(accept: Boolean, cibaConsent: PushRemediation.CibaConsent) = viewModelScope.launch(dispatcher) {
-        cibaConsent.handleAcceptOrDeny(accept)
+        cibaConsent
+            .handleAcceptOrDeny(accept)
             .onSuccess { remediationState -> uiStateFlow.update { State.RemediationStatus(remediationState) } }
             .onFailure { onError(it) }
     }
 
     fun userVerification(userVerification: PushRemediation.UserVerification, result: BiometricPrompt.AuthenticationResult?) = viewModelScope.launch(dispatcher) {
-        userVerification.handleUserVerification(result)
+        userVerification
+            .handleUserVerification(result)
             .onSuccess { remediationState -> uiStateFlow.update { State.RemediationStatus(remediationState) } }
             .onFailure { onError(it) }
     }
 
     fun signOut(userId: String) = viewModelScope.launch(dispatcher) {
-        authenticatorClient.delete(userId).onSuccess {
-            oidcClient.revokeToken(userId)
-                .onSuccess {
-                    oidcClient.deleteSession(userId)
-                    uiStateFlow.update { State.SignedOut }
-                }
-                .onFailure { onError(it) }
-        }.onFailure { onError(it) }
+        authenticatorClient
+            .delete(userId)
+            .onSuccess {
+                oidcClient
+                    .revokeToken(userId)
+                    .onSuccess {
+                        oidcClient.deleteSession(userId)
+                        uiStateFlow.update { State.SignedOut }
+                    }.onFailure { onError(it) }
+            }.onFailure { onError(it) }
     }
 
     fun onError(throwable: Throwable) {
