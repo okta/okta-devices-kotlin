@@ -60,14 +60,16 @@ internal class PushChallengeImpl(private val ctx: RemediateContext, private val 
             return Result.failure(DeviceAuthenticatorError.UnsupportedTransactionType(ErrorCode.UNSUPPORTED_TRANSACTION_TYPE.value, "Transaction type not supported"))
         }
 
-        val remediation = when {
-            userVerification == REQUIRED && !ctx.uvEnabled() -> UserVerificationError(this, ctx, UserVerificationRequired(USER_VERIFICATION_FAILED.value, ""))
-            (userVerification == PREFERRED && ctx.uvEnabled()) || userVerification == REQUIRED -> UserVerification(this, ctx, ctx.baseEnrollment.userVerificationSignature())
-            else -> when (ctx.challengeInformation.transactionType) {
-                LOGIN -> UserConsent(this, ctx)
-                CIBA -> PushRemediation.CibaConsent(this, ctx)
+        val remediation =
+            when {
+                userVerification == REQUIRED && !ctx.uvEnabled() -> UserVerificationError(this, ctx, UserVerificationRequired(USER_VERIFICATION_FAILED.value, ""))
+                (userVerification == PREFERRED && ctx.uvEnabled()) || userVerification == REQUIRED -> UserVerification(this, ctx, ctx.baseEnrollment.userVerificationSignature())
+                else ->
+                    when (ctx.challengeInformation.transactionType) {
+                        LOGIN -> UserConsent(this, ctx)
+                        CIBA -> PushRemediation.CibaConsent(this, ctx)
+                    }
             }
-        }
         Result.success(remediation)
     }.getOrElse {
         when (it) {

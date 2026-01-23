@@ -37,16 +37,16 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
  * The OIDC client for this example is from: https://github.com/okta/okta-mobile-kotlin
  */
 class OktaOidcClient(app: Application) {
-
     private val jwtParser = JwtParser.create()
 
-    private val oidcClient = OidcClient.createFromDiscoveryUrl(
-        OidcConfiguration(
-            clientId = BuildConfig.OIDC_CLIENT_ID,
-            defaultScope = BuildConfig.OIDC_SCOPE
-        ),
-        "${BuildConfig.ORG_URL}/.well-known/openid-configuration?client_id=${BuildConfig.OIDC_CLIENT_ID}".toHttpUrl()
-    )
+    private val oidcClient =
+        OidcClient.createFromDiscoveryUrl(
+            OidcConfiguration(
+                clientId = BuildConfig.OIDC_CLIENT_ID,
+                defaultScope = BuildConfig.OIDC_SCOPE
+            ),
+            "${BuildConfig.ORG_URL}/.well-known/openid-configuration?client_id=${BuildConfig.OIDC_CLIENT_ID}".toHttpUrl()
+        )
 
     private val credentialDataSource = oidcClient.createCredentialDataSource(app)
 
@@ -55,23 +55,32 @@ class OktaOidcClient(app: Application) {
 
         return when (val result = webAuthenticationClient.login(activity, BuildConfig.OIDC_REDIRECT_URI, payload)) {
             is OidcClientResult.Error -> Result.failure(OidcError.Error("oidc login failed", result.exception))
-            is OidcClientResult.Success -> result.result.idToken?.run {
-                runCatching {
-                    jwtParser.parse(this).let { jwt ->
-                        val credential = jwt.subject?.run { getCredential(this) } ?: credentialDataSource.createCredential()
-                        credential.storeToken(result.result)
-                        Result.success(UserStatus(checkNotNull(jwt.subject), checkNotNull(jwt.name), pushEnabled = false, userVerification = false, cibaEnable = false))
-                    }
-                }.getOrElse { Result.failure(it) }
-            } ?: Result.failure(OidcError.InvalidState)
+            is OidcClientResult.Success ->
+                result.result.idToken?.run {
+                    runCatching {
+                        jwtParser.parse(this).let { jwt ->
+                            val credential = jwt.subject?.run { getCredential(this) } ?: credentialDataSource.createCredential()
+                            credential.storeToken(result.result)
+                            Result.success(UserStatus(checkNotNull(jwt.subject), checkNotNull(jwt.name), pushEnabled = false, userVerification = false, cibaEnable = false))
+                        }
+                    }.getOrElse { Result.failure(it) }
+                } ?: Result.failure(OidcError.InvalidState)
         }
     }
 
-    private suspend fun getCredential(userId: String): Credential? =
-        credentialDataSource.listCredentials().find { it.idToken()?.subject == userId }
+    private suspend fun getCredential(userId: String): Credential? = credentialDataSource.listCredentials().find { it.idToken()?.subject == userId }
 
     suspend fun getSignedInUser(): Result<UserStatus> = runCatching {
-        val jwt = jwtParser.parse(checkNotNull(credentialDataSource.listCredentials().first().token?.idToken))
+        val jwt =
+            jwtParser.parse(
+                checkNotNull(
+                    credentialDataSource
+                        .listCredentials()
+                        .first()
+                        .token
+                        ?.idToken
+                )
+            )
         Result.success(UserStatus(checkNotNull(jwt.subject), checkNotNull(jwt.name), pushEnabled = false, userVerification = false, cibaEnable = false))
     }.getOrElse { Result.failure(it) }
 
@@ -83,15 +92,13 @@ class OktaOidcClient(app: Application) {
         } ?: Result.failure(OidcError.NoSession)
     }.getOrElse { Result.failure(it) }
 
-    suspend fun revokeToken(userId: String): Result<Boolean> {
-        return getCredential(userId)?.run {
-            // revoking refresh token will also revoke access token.
-            when (val result = revokeToken(RevokeTokenType.REFRESH_TOKEN)) {
-                is OidcClientResult.Error -> Result.failure(OidcError.Error(cause = result.exception))
-                is OidcClientResult.Success -> Result.success(true)
-            }
-        } ?: Result.failure(OidcError.NoSession)
-    }
+    suspend fun revokeToken(userId: String): Result<Boolean> = getCredential(userId)?.run {
+        // revoking refresh token will also revoke access token.
+        when (val result = revokeToken(RevokeTokenType.REFRESH_TOKEN)) {
+            is OidcClientResult.Error -> Result.failure(OidcError.Error(cause = result.exception))
+            is OidcClientResult.Success -> Result.success(true)
+        }
+    } ?: Result.failure(OidcError.NoSession)
 
     suspend fun deleteSession(userId: String): Result<Boolean> = runCatching {
         getCredential(userId)?.run { delete() }

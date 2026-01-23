@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.ApplicationExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
@@ -6,8 +8,7 @@ plugins {
     id("spotless")
     id("com.google.gms.google-services")
     id("io.gitlab.arturbosch.detekt")
-    id("org.jetbrains.kotlin.plugin.compose") version Version.kotlin
-    kotlin("android")
+    id("org.jetbrains.kotlin.plugin.compose") version libs.versions.kotlin.get()
 }
 
 detekt {
@@ -16,7 +17,7 @@ detekt {
     parallel = true
 }
 
-android {
+extensions.configure<ApplicationExtension> {
     compileSdk = DevicesConfig.compileSdkVersion
     namespace = "example.okta.android.sample"
 
@@ -54,42 +55,44 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget(JavaVersion.VERSION_17.toString())
+    }
+}
+
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(project(":devices-push"))
 
-    implementation(platform("com.okta.kotlin:bom:1.2.0"))
-    implementation("com.okta.kotlin:auth-foundation")
-    implementation("com.okta.kotlin:oauth2")
-    implementation("com.okta.kotlin:web-authentication-ui")
+    implementation(platform(libs.okta.bom))
+    implementation(libs.auth.foundation)
+    implementation(libs.oauth2)
+    implementation(libs.web.authentication.ui)
 
-    implementation("androidx.core:core-ktx:1.16.0")
-    implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("androidx.biometric:biometric:1.4.0-alpha04")
-    implementation("androidx.activity:activity-compose:1.10.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:${Version.archLifecycleVersion}")
-    implementation("androidx.compose.material:material:${Version.compose}")
-    implementation("androidx.compose.ui:ui:${Version.compose}")
-    implementation("androidx.compose.ui:ui-tooling:${Version.compose}")
-    implementation("androidx.compose.ui:ui-tooling-preview:${Version.compose}")
-    implementation("androidx.compose.runtime:runtime:${Version.compose}")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.compose.material)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.tooling)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.runtime)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+    implementation(libs.kotlinx.coroutines.play.services)
 
-    implementation("com.jakewharton.timber:timber:5.0.1")
+    implementation(libs.timber)
 
     // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
-    implementation("com.google.firebase:firebase-messaging-ktx")
-    implementation("androidx.security:security-crypto-ktx:1.1.0-beta01")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.google.firebase.messaging)
+    implementation(libs.androidx.security.crypto)
 }

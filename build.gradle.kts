@@ -2,29 +2,22 @@ import org.gradle.kotlin.dsl.sonarqube
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.android.application") version "8.11.1" apply false
-    id("com.android.library") version "8.11.1" apply false
-    id("org.jetbrains.kotlin.android") version Version.kotlin apply false
-    id("org.jetbrains.dokka") version "2.0.0" apply false
-    id("com.google.gms.google-services") version "4.4.3" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.9.1" apply false
-    id("org.sonarqube") version "6.2.0.5505" apply true
+    id("com.android.application") version "9.0.0" apply false
+    id("com.android.library") version "9.0.0" apply false
+    id("org.jetbrains.kotlin.android") version libs.versions.kotlin.get() apply false
+    id("org.jetbrains.dokka") version "2.1.0" apply false
+    id("com.google.gms.google-services") version "4.4.4" apply false
+    id("org.jetbrains.kotlinx.kover") version "0.9.4" apply false
+    id("org.sonarqube") version "7.2.2.6593" apply true
     id("io.gitlab.arturbosch.detekt") version "1.23.8" apply false
 }
 
 buildscript {
     configurations.all {
         resolutionStrategy {
-            force("com.google.protobuf:protobuf-java:3.25.5")
-            force("com.google.android.gms:play-services-basement:18.4.0")
-            force("io.netty:netty-codec-http2:4.1.124.Final")
-            force("com.fasterxml.jackson.core:jackson-core:2.18.3")
-            force("commons-io:commons-io:2.18.0")
-            // https://issuetracker.google.com/issues/340202290
-            // AGP introduced incompatible bc versions. Forces the version that AGP uses.
-            // 1.7.1 has vulns, but these vulns are not included in the binary since this is used by buildscript
-            force("org.bouncycastle:bcprov-jdk18on:1.71")
-            force("org.bouncycastle:bcpkix-jdk18on:1.71")
+            force(libs.bcprov.jdk18on)
+            force(libs.bcpkix.jdk18on)
+            force(libs.bcutil.jdk18on)
         }
     }
 }
@@ -32,21 +25,14 @@ buildscript {
 allprojects {
     configurations.all {
         resolutionStrategy {
-            force("com.fasterxml.jackson.core:jackson-core:2.18.3")
-            force("commons-io:commons-io:2.18.0")
-            force("com.google.protobuf:protobuf-java:3.25.5")
-            force("io.netty:netty-codec-http2:4.1.124.Final")
-            force("com.squareup.okio:okio:3.9.0")
-            force("org.bouncycastle:bcprov-jdk18on:1.78.1")
-            force("org.json:json:20240303")
-            force("com.google.guava:guava:33.3.0-jre")
-            force("androidx.room:room-runtime:${Version.room}")
-            force("com.google.android.gms:play-services-basement:18.4.0")
+            force(libs.bcprov.jdk18on)
+            force(libs.bcpkix.jdk18on)
+            force(libs.bcutil.jdk18on)
         }
     }
 }
 
-task<Delete>("clean") {
+tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 

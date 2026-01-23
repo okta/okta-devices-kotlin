@@ -31,11 +31,9 @@ import com.okta.devices.push.api.PushChallenge
 import com.okta.devices.push.api.PushEnrollment
 import com.okta.devices.util.baseUrl
 
-internal class PushAuthenticatorImpl(
-    private val core: DeviceAuthenticatorCore,
-    private val myAccount: Boolean = false,
-) : PushAuthenticator, DeviceAuthenticator by DeviceAuthenticatorImpl(core, myAccount) {
-
+internal class PushAuthenticatorImpl(private val core: DeviceAuthenticatorCore, private val myAccount: Boolean = false) :
+    PushAuthenticator,
+    DeviceAuthenticator by DeviceAuthenticatorImpl(core, myAccount) {
     override suspend fun parseChallenge(challenge: String, allowedClockSkewInSeconds: Long): Result<PushChallenge> = runCatching {
         val challengeInfo = core.parseJws(challenge, allowedClockSkewInSeconds).getOrElse { return Result.failure(it) }
         core.getAuthenticatorEnrollmentById(challengeInfo.authenticatorEnrollmentId).fold(
@@ -52,13 +50,14 @@ internal class PushAuthenticatorImpl(
 
     override suspend fun enroll(authToken: AuthToken, config: DeviceAuthenticatorConfig, params: EnrollmentParameters): Result<PushEnrollment> {
         if (params !is EnrollmentParameters.Push) return Result.failure(IllegalArgumentException("EnrollmentParameters must be of type Push"))
-        val coreParameters = EnrollmentCoreParameters(
-            methodTypes = listOf(PUSH),
-            authToken = AuthorizationToken.Bearer(authToken.token),
-            pushToken = params.registrationToken.get(),
-            userVerificationEnabled = params.enableUserVerification,
-            cibaEnabled = params.enableCiba
-        )
+        val coreParameters =
+            EnrollmentCoreParameters(
+                methodTypes = listOf(PUSH),
+                authToken = AuthorizationToken.Bearer(authToken.token),
+                pushToken = params.registrationToken.get(),
+                userVerificationEnabled = params.enableUserVerification,
+                cibaEnabled = params.enableCiba
+            )
         return if (myAccount) {
             core.enrollMyAccount(config.baseUrl(), config.oidcClientId, coreParameters, null).fold(
                 { Result.success(PushEnrollmentImpl(it, myAccount)) },

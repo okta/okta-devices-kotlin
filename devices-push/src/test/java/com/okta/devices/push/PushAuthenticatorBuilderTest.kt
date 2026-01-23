@@ -40,10 +40,11 @@ class PushAuthenticatorBuilderTest : BaseTest() {
         val appConfig = ApplicationConfig(context, "MyApp", "1.0.0", applicationInstallationId)
 
         // act
-        val pushAuthenticator = PushAuthenticatorBuilder.create(appConfig) {
-            deviceStore = inMemoryDataStore
-            passphrase = "testing passphrase".toByteArray()
-        }
+        val pushAuthenticator =
+            PushAuthenticatorBuilder.create(appConfig) {
+                deviceStore = inMemoryDataStore
+                passphrase = "testing passphrase".toByteArray()
+            }
 
         // assert
         assertThat(runBlocking { pushAuthenticator.getOrThrow().allEnrollments() }.isSuccess, `is`(true))

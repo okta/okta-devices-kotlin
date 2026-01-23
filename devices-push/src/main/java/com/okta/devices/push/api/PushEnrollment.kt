@@ -23,7 +23,6 @@ import com.okta.devices.api.model.RegistrationToken
  * existing challenges and updating the device registration token.
  */
 interface PushEnrollment : AuthenticatorEnrollment {
-
     /**
      * update push token for this enrollment
      *

@@ -19,7 +19,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 data class UserStatus(val userId: String, val userName: String, val pushEnabled: Boolean, val userVerification: Boolean, val cibaEnable: Boolean)
 
 class UserStatusPreview : PreviewParameterProvider<UserStatus> {
-    override val values: Sequence<UserStatus> = sequenceOf(
-        UserStatus("userId", "userName", pushEnabled = true, userVerification = true, cibaEnable = true)
-    )
+    override val values: Sequence<UserStatus> =
+        sequenceOf(
+            UserStatus("userId", "userName", pushEnabled = true, userVerification = true, cibaEnable = true)
+        )
 }

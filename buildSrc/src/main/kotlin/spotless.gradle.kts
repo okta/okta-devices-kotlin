@@ -6,7 +6,6 @@ spotless {
     format("misc") {
         target("**/*.gradle", "**/*.md", "**/.gitignore")
         trimTrailingWhitespace()
-        indentWithSpaces(4)
         endWithNewline()
     }
     cpp {
@@ -17,14 +16,15 @@ spotless {
     }
     kotlin {
         target("**/*.kt")
-        ktlint("0.48.0")
+        // Disable the naming rules for composable functions.
+        ktlint("1.5.0").editorConfigOverride(mapOf("disabled_rules" to "standard:function-naming"))
         licenseHeaderFile("${rootDir}/config/license")
         endWithNewline()
     }
     kotlinGradle {
         // same as kotlin, but for .gradle.kts files (defaults to "*.gradle.kts")
         target("*.gradle.kts", "additionalScripts/*.gradle.kts", "buildSrc/*.gradle.kts")
-        ktlint("0.48.0")
+        ktlint("1.5.0")
         endWithNewline()
     }
     format("xml") {

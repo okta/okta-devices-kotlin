@@ -16,5 +16,6 @@ package example.okta.android.sample.errors
 
 sealed class AuthenticatorError(msg: String? = null, cause: Throwable? = null) : Exception(msg, cause) {
     object NoEnrollment : AuthenticatorError()
+
     class Error(msg: String? = null, cause: Throwable? = null) : AuthenticatorError(msg, cause)
 }

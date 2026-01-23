@@ -72,14 +72,45 @@ class ChallengeInformationTest : BaseTest() {
         val orgId: String = uuid()
         val userId: String = uuid()
 
-        val pushJws = createIdxPushJws(
-            serverKey, serverKid, issuer, authenticatorEnrollmentId, methodEnrollmentId, aud,
-            iat, nbf, exp, method, transactionId, transactionType, bindingMessage, transactionTime, clientLocation, clientOs,
-            riskLevel, challengeTextItems, unusualActivities, requestReferrer, appInstanceName,
-            userMediationChallenge, userVerificationChallenge, emptyList(), requiredSignals, requiredSignalProviders,
-            loginHint, orgId, userId
-        )
-        val claims = Jwts.parser().verifyWith(serverPubKey).build().parseSignedClaims(pushJws).payload
+        val pushJws =
+            createIdxPushJws(
+                serverKey,
+                serverKid,
+                issuer,
+                authenticatorEnrollmentId,
+                methodEnrollmentId,
+                aud,
+                iat,
+                nbf,
+                exp,
+                method,
+                transactionId,
+                transactionType,
+                bindingMessage,
+                transactionTime,
+                clientLocation,
+                clientOs,
+                riskLevel,
+                challengeTextItems,
+                unusualActivities,
+                requestReferrer,
+                appInstanceName,
+                userMediationChallenge,
+                userVerificationChallenge,
+                emptyList(),
+                requiredSignals,
+                requiredSignalProviders,
+                loginHint,
+                orgId,
+                userId
+            )
+        val claims =
+            Jwts
+                .parser()
+                .verifyWith(serverPubKey)
+                .build()
+                .parseSignedClaims(pushJws)
+                .payload
 
         // act
         val challengeInfo = ChallengeInformation.parse(claims)
