@@ -1,8 +1,0 @@
-test_suites:
-  - name: sca-scan
-    script_path: /root/okta/okta-devices-kotlin/scripts/
-    sort_order: '1'
-    timeout: '200'
-    script_name: dependency_scan
-    criteria: MERGE
-    queue_name: small
