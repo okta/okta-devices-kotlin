@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   general-platform-helpers: okta/general-platform-helpers@1.9.4
   platform-helpers: okta/platform-helpers@2.0.0
+  android: circleci/android@3.1.0
   python: circleci/python@2.1.1
   aws-cli: circleci/aws-cli@5.1
 
@@ -91,6 +92,18 @@ jobs:
               --build-env "circleci" \
               --suppress_output         
 
+  snyk-scan:
+    executor:
+      name: android/android_docker
+      tag: 2025.09.1
+    steps:
+      - checkout
+      - general-platform-helpers/step-run-snyk-monitor:
+          scan-all-projects: true
+          skip-unresolved: false
+          run-on-non-main: false
+          additional-arguments: "--configuration-matching=implementation"
+
 workflows:
   build-and-test:
     jobs:
@@ -98,6 +111,13 @@ workflows:
       - devices-push-test
       - devices-push-build
       - spotlessCheck
+      - snyk-scan:
+          context:
+            - static-analysis
+          filters:
+            branches:
+              only:
+                - master
   "Malware Scanner":
     jobs:
       - reversing-labs:
