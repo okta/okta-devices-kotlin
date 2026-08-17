@@ -7,8 +7,8 @@ import java.io.ByteArrayOutputStream
  */
 object DevicesConfig {
     const val minSdkVersion = 24
-    const val compileSdkVersion = 36
-    const val targetSdkVersion = 36
+    const val compileSdkVersion = 37
+    const val targetSdkVersion = 37
 
     const val pushSampleAppVersionCode = 1
     const val pushSampleAppVersionName = "1.0.0"
